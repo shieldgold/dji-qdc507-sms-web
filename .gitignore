@@ -1,0 +1,16 @@
+# Build output
+smsweb-armv7
+smsweb
+*.exe
+
+# Go
+.gocache/
+.gocache121/
+.gotmp/
+go.sum
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
