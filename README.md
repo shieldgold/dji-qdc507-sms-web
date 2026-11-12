@@ -1,5 +1,7 @@
 # dji-qdc507-sms-web
 
+> This branch adds SIM PIN unlocking and standalone boot supervision. See [iPhone 直连部署与回滚](IPHONE_DIRECT.md) for the verified deployment scope.
+
 **Read and send SMS — including verification codes — on an iPad, iPhone, or any browser-only device, using a cheap DJI Cellular 4G module.**
 
 [English](README.md) · [简体中文](README.zh-CN.md)

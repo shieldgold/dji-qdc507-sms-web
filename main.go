@@ -25,11 +25,12 @@ import (
 )
 
 var (
-	flagAT    = flag.String("at", "/dev/smd9", "AT 命令通道")
-	flagPort  = flag.String("port", "8787", "HTTP 端口")
-	flagData  = flag.String("data", "/data/smsweb", "数据目录")
-	flagPoll  = flag.Duration("poll", 3*time.Second, "轮询新短信间隔")
-	flagDebug = flag.Bool("debug", false, "打印详细日志")
+	flagAT     = flag.String("at", "/dev/smd9", "AT 命令通道")
+	flagPort   = flag.String("port", "8787", "HTTP 端口")
+	flagListen = flag.String("listen", "192.168.225.1", "仅监听模块 USB 网络地址")
+	flagData   = flag.String("data", "/data/smsweb", "数据目录")
+	flagPoll   = flag.Duration("poll", 3*time.Second, "轮询新短信间隔")
+	flagDebug  = flag.Bool("debug", false, "打印详细日志")
 )
 
 type Store struct {
@@ -173,9 +174,12 @@ func mergeParts(parts []*part) []*Message {
 }
 
 type App struct {
-	modem *Modem
-	store *Store
-	auth  *AuthStore
+	modem         *Modem
+	store         *Store
+	auth          *AuthStore
+	pin           *PINController
+	opMu          sync.Mutex
+	smsConfigured bool
 
 	identMu sync.Mutex
 	ident   SimIdentity
@@ -194,7 +198,7 @@ func (a *App) identity() SimIdentity {
 	if a.ident.Key == "" || a.ident.Key == "unknown" || time.Since(a.identAt) > time.Minute {
 		if si := a.modem.Identity(); si.Key != "" && si.Key != "unknown" {
 			if si.Key != a.ident.Key {
-				log.Printf("SIM 身份: ICCID=%s IMSI=%s 号码=%s", si.ICCID, si.IMSI, si.Number)
+				log.Printf("SIM 身份已更新")
 			}
 			a.ident = si
 			a.identAt = time.Now()
@@ -207,7 +211,7 @@ func (a *App) identity() SimIdentity {
 func (a *App) requireAuth(h Handler) Handler {
 	return func(w *Resp, r *Req) error {
 		si := a.identity()
-		if !a.auth.Check(cookieValue(r.Header["cookie"], tokenName), si.Key) {
+		if si.Key == "" || si.Key == "unknown" || !a.auth.Check(cookieValue(r.Header["cookie"], tokenName), si.Key) {
 			return writeJSON(w, 401, map[string]string{"error": "未登录", "code": "unauthorized"})
 		}
 		return h(w, r)
@@ -224,6 +228,7 @@ func (a *App) handleAuthStatus(w *Resp, r *Req) error {
 		"registered":    a.auth.Registered(si.Key),
 		"authenticated": a.auth.Check(tok, si.Key),
 		"minPassword":   minPassword,
+		"sim":           a.pin.Status(),
 	})
 }
 
@@ -240,11 +245,14 @@ func (a *App) handleAuthSetup(w *Resp, r *Req) error {
 		return writeJSON(w, 400, map[string]string{"error": "两次输入的密码不一致"})
 	}
 	si := a.identity()
+	if si.Key == "" || si.Key == "unknown" {
+		return writeJSON(w, 400, map[string]string{"error": "尚未识别 SIM 卡，请稍后重试"})
+	}
 	tok, err := a.auth.Setup(si.Key, si.IMSI, si.Number, req.Password, req.Remember)
 	if err != nil {
 		return writeJSON(w, 400, map[string]string{"error": err.Error()})
 	}
-	log.Printf("已为该 SIM 注册访问密码 (ICCID=%s)", si.ICCID)
+	log.Printf("已为该 SIM 注册访问密码")
 	ttl := 0
 	if req.Remember {
 		ttl = int(rememberTTL.Seconds())
@@ -302,11 +310,20 @@ func (a *App) handleAuthChange(w *Resp, r *Req) error {
 		ttl = int(rememberTTL.Seconds())
 	}
 	w.AddCookie(cookieHeader(a.auth.IssueToken(si.Key, req.Remember), ttl))
-	log.Printf("访问密码已修改 (ICCID=%s)", si.ICCID)
+	log.Printf("访问密码已修改")
 	return writeJSON(w, 200, map[string]any{"ok": true})
 }
 
 func (a *App) pollOnce() {
+	a.opMu.Lock()
+	defer a.opMu.Unlock()
+	if err := a.ensureSMSLocked(); err != nil {
+		a.mu.Lock()
+		a.last = time.Now()
+		a.lastE = err
+		a.mu.Unlock()
+		return
+	}
 	parts, err := a.modem.ListMessages()
 	a.mu.Lock()
 	a.last = time.Now()
@@ -345,6 +362,7 @@ func (a *App) handleState(w *Resp, r *Req) error {
 		"status":   st,
 		"messages": a.store.List(),
 		"lastPoll": last.Format("15:04:05"),
+		"sim":      a.pin.Status(),
 	}
 	if lastE != nil {
 		resp["lastError"] = lastE.Error()
@@ -361,6 +379,11 @@ func (a *App) handleSend(w *Resp, r *Req) error {
 	if err := json.Unmarshal(r.Body, &req); err != nil {
 		return writeJSON(w, 400, map[string]string{"error": "请求格式错误"})
 	}
+	a.opMu.Lock()
+	defer a.opMu.Unlock()
+	if err := a.ensureSMSLocked(); err != nil {
+		return writeJSON(w, 400, map[string]string{"error": err.Error()})
+	}
 	a.seq++
 	pdus, err := buildSubmit(req.Number, req.Text, (a.seq%255)+1)
 	if err != nil {
@@ -376,13 +399,13 @@ func (a *App) handleSend(w *Resp, r *Req) error {
 		return writeJSON(w, 200, map[string]any{"ok": true, "dry": true, "parts": len(pdus),
 			"note": "干跑通过：模块接受了 PDU，已在发送前取消"})
 	}
-	log.Printf("已发送到 %s（%d 条分片）", req.Number, len(pdus))
+	log.Printf("短信已提交（%d 条分片）", len(pdus))
 	ts := time.Now().Format("2006-01-02 15:04:05")
 	key := fmt.Sprintf("%s|%s|%x|out", req.Number, ts, req.Text)
 	a.store.mu.Lock()
 	a.store.Msgs[key] = &Message{
 		Key: key, Sender: req.Number, Body: req.Text, Time: ts,
-		Status: "已发送", Direction: "out", Code: detectCode(req.Text),
+		Status: "已提交，送达未确认", Direction: "out", Code: detectCode(req.Text),
 	}
 	a.store.mu.Unlock()
 	a.store.Save()
@@ -390,6 +413,8 @@ func (a *App) handleSend(w *Resp, r *Req) error {
 }
 
 func (a *App) handleDelete(w *Resp, r *Req) error {
+	a.opMu.Lock()
+	defer a.opMu.Unlock()
 	var req struct {
 		Key string `json:"key"`
 	}
@@ -413,15 +438,19 @@ func (a *App) handleDelete(w *Resp, r *Req) error {
 
 func main() {
 	flag.Parse()
+	addr, err := listenAddress(*flagListen, *flagPort)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// 这块模块只有 43MB 内存，尽量压低运行时开销
 	runtime.GOMAXPROCS(1)
 	debug.SetGCPercent(20)
 
-	if err := os.MkdirAll(*flagData, 0755); err != nil {
+	if err := os.MkdirAll(*flagData, 0700); err != nil {
 		log.Fatalf("无法创建数据目录: %v", err)
 	}
 	if logf, err := os.OpenFile(filepath.Join(*flagData, "smsweb.log"),
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
 		log.SetOutput(logf)
 	}
 	log.Printf("=== smsweb 启动 (AT=%s port=%s) ===", *flagAT, *flagPort)
@@ -429,7 +458,6 @@ func main() {
 	app := &App{store: LoadStore(*flagData), auth: LoadAuth(*flagData)}
 
 	var modem *Modem
-	var err error
 	for i := 0; i < 60; i++ {
 		modem, err = OpenModem(*flagAT)
 		if err == nil {
@@ -447,6 +475,7 @@ func main() {
 		log.Fatalf("无法初始化模块 AT 通道 %s", *flagAT)
 	}
 	app.modem = modem
+	app.pin = newPINController(modem.AT, *flagData)
 	modem.SetNewSMSHandler(func() { app.pollOnce() })
 	st := modem.Status()
 	log.Printf("模块就绪: 运营商=%s 信号=%s SIM=%v", st.Carrier, st.Signal, st.SimReady)
@@ -456,9 +485,9 @@ func main() {
 		time.Sleep(2 * time.Second)
 		si := app.identity()
 		if a := app.auth.Registered(si.Key); a {
-			log.Printf("该 SIM 已注册访问密码 (ICCID=%s)", si.ICCID)
+			log.Printf("该 SIM 已注册访问密码")
 		} else {
-			log.Printf("该 SIM 尚未注册访问密码，首次打开网页时需设置 (ICCID=%s)", si.ICCID)
+			log.Printf("该 SIM 尚未注册访问密码，首次打开网页时需设置")
 		}
 	}()
 
@@ -471,6 +500,9 @@ func main() {
 		"GET /api/state":        app.requireAuth(app.handleState),
 		"POST /api/send":        app.requireAuth(app.handleSend),
 		"POST /api/delete":      app.requireAuth(app.handleDelete),
+		"GET /api/sim":          app.requireAuth(app.handlePINStatus),
+		"POST /api/sim/unlock":  app.requireAuth(app.handlePINUnlock),
+		"POST /api/sim/retry":   app.requireAuth(app.handlePINRetry),
 	}
 	fallback := func(w *Resp, r *Req) error {
 		if r.Path != "/" {
@@ -479,7 +511,6 @@ func main() {
 		return w.Write(200, "text/html; charset=utf-8", []byte(indexHTML))
 	}
 
-	addr := ":" + *flagPort
 	log.Printf("HTTP 监听 %s", addr)
 	if err := ServeHTTP(addr, routes, fallback); err != nil {
 		log.Fatalf("HTTP 启动失败: %v", err)

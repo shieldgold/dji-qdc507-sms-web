@@ -58,17 +58,18 @@ if [ ! -f "$BIN" ]; then
     sh "$ROOT/build.sh"
 fi
 
-echo "==> replacing any running instance"
-$A shell "kill \$(pidof smsweb) 2>/dev/null; sleep 1; mkdir -p $REMOTE_DIR"
+echo "==> backing up and stopping the existing service"
+$A shell "set -e; umask 077; if [ -d $REMOTE_DIR ]; then tar czf /data/smsweb-before-\$(date +%Y%m%d-%H%M%S).tgz -C /data smsweb; fi; if [ -d /tmp/smsweb-supervisor.lock ]; then sh $REMOTE_DIR/start.sh stop; else kill \$(pidof smsweb) 2>/dev/null || true; fi; mkdir -p $REMOTE_DIR"
 
 echo "==> pushing binary and boot script"
-$A push "$BIN" "$REMOTE_DIR/smsweb"
+$A push "$BIN" "$REMOTE_DIR/smsweb.new"
 $A push "$ROOT/deploy/start.sh" "$REMOTE_DIR/start.sh"
-$A shell "chmod +x $REMOTE_DIR/smsweb $REMOTE_DIR/start.sh; sync"
+$A push "$ROOT/deploy/rollback-module.sh" "$REMOTE_DIR/rollback-module.sh"
+$A shell "set -e; chmod 700 $REMOTE_DIR/smsweb.new $REMOTE_DIR/start.sh $REMOTE_DIR/rollback-module.sh; mv $REMOTE_DIR/smsweb.new $REMOTE_DIR/smsweb; sync"
 
 if [ "$AUTOSTART" = "1" ]; then
     echo "==> installing boot hook: /etc/rcS.d/S99smsweb"
-    $A shell "mount -o remount,rw / && ln -sf $REMOTE_DIR/start.sh /etc/rcS.d/S99smsweb && sync && mount -o remount,ro / && ls -l /etc/rcS.d/S99smsweb"
+    $A shell "set -e; if [ -e /etc/rcS.d/S99smsweb ] || [ -L /etc/rcS.d/S99smsweb ]; then test \"\$(readlink /etc/rcS.d/S99smsweb)\" = $REMOTE_DIR/start.sh; fi; mount -o remount,rw /; trap 'mount -o remount,ro /' EXIT; ln -sf $REMOTE_DIR/start.sh /etc/rcS.d/S99smsweb; sync; mount -o remount,ro /; trap - EXIT; ls -l /etc/rcS.d/S99smsweb"
 else
     echo "==> skipping boot hook (pass --autostart to install it)"
 fi
@@ -90,5 +91,4 @@ echo
 echo "Notes:"
 echo "  * The module needs ~40s after power-up before the page responds."
 echo "  * First visit asks you to set a per-SIM password."
-echo "  * Uninstall: adb shell \"kill \\\$(pidof smsweb); mount -o remount,rw /;"
-echo "      rm -f /etc/rcS.d/S99smsweb; sync; mount -o remount,ro /; rm -rf $REMOTE_DIR\""
+echo "  * Disable service (preserves SMS/settings): adb shell sh $REMOTE_DIR/rollback-module.sh"

@@ -1,5 +1,7 @@
 # dji-qdc507-sms-web
 
+> This branch adds SIM PIN unlocking and standalone boot supervision. See [iPhone 直连部署与回滚](IPHONE_DIRECT.md) for the verified deployment scope.
+
 **用一块几十块钱的大疆 4G 模块，让 iPad、iPhone 或任何只能开浏览器的设备收发短信、拿到验证码。**
 
 [English](README.md) · [简体中文](README.zh-CN.md)

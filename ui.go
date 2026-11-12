@@ -85,6 +85,19 @@ textarea{resize:none;height:42px}
   <button class="wide" id="btn-login">登录</button>
 </div>
 
+<!-- ============ SIM PIN ============ -->
+<div id="pin" class="gate" style="display:none">
+  <div class="logo">🔓</div><h2>解锁 SIM 卡</h2>
+  <p>模块断电后需要重新输入 SIM PIN。<br>PIN 只用于本次解锁，不会保存到模块。</p>
+  <div class="sim"><span id="pin-state">正在检查 SIM…</span></div>
+  <div class="err" id="err-pin" role="alert"></div>
+  <div class="field"><input id="pin-value" type="password" inputmode="numeric" maxlength="8" placeholder="SIM PIN（4–8 位数字）" autocomplete="off"></div>
+  <button class="wide" id="btn-pin-unlock">解锁一次</button>
+  <button class="wide danger" id="btn-pin-retry" style="display:none;margin-top:14px">已核实正确 PIN，允许再试一次</button>
+  <div style="text-align:center;margin-top:12px"><button class="ghost" id="btn-pin-refresh">刷新 SIM 状态</button></div>
+  <div class="hint">PIN 错误可能消耗 SIM 重试次数。程序不会自动重试。</div>
+</div>
+
 <!-- ============ 主界面 ============ -->
 <div id="main" style="display:none">
   <header>
@@ -123,7 +136,7 @@ function toast(t){var e=$('toast');e.textContent=t;e.classList.add('on');setTime
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function showErr(id,msg){var e=$(id);if(!msg){e.style.display='none';return}e.textContent=msg;e.style.display='block'}
 function view(name){
-  ['setup','login','main','chpw'].forEach(function(v){$(v).style.display=(v===name?'':'none')});
+  ['setup','login','main','chpw','pin'].forEach(function(v){$(v).style.display=(v===name?'':'none')});
 }
 var SIM=null;
 function simBox(el,st){
@@ -139,14 +152,50 @@ function boot(){
     SIM=st;
     if(!st.registered){simBox('sim-setup',st);view('setup');$('pw1').focus();return}
     if(!st.authenticated){simBox('sim-login',st);view('login');$('pw').focus();return}
+    if(st.sim&&st.sim.state!=='READY'){showPIN(st.sim);return}
     view('main');load();
-  }).catch(function(){showErr('err-login','无法连接模块，请稍后重试')})
+  }).catch(function(){view('login');showErr('err-login','无法连接模块，请稍后重试')})
 }
 
 function post(url,body){
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json().then(function(d){d._status=r.status;return d})})
 }
+
+var pinSending=false;
+function showPIN(st){
+  view('pin');
+  var label={'SIM PIN':'SIM 已锁定，请输入 PIN','SIM PUK':'SIM 需要 PUK，请在手机的 SIM 管理中处理','READY':'SIM 已就绪'};
+  $('pin-state').textContent=label[st.state]||('SIM 状态：'+(st.state||'未知'));
+  $('btn-pin-unlock').disabled=pinSending||st.blocked||st.state!=='SIM PIN';
+  $('pin-value').disabled=pinSending||st.blocked||st.state!=='SIM PIN';
+  $('btn-pin-retry').style.display=st.blocked&&st.state==='SIM PIN'?'':'none';
+}
+$('btn-pin-refresh').onclick=function(){showErr('err-pin','');boot()};
+$('btn-pin-unlock').onclick=function(){
+  if(pinSending)return;
+  var value=$('pin-value').value;
+  if(!/^[0-9]{4,8}$/.test(value)){showErr('err-pin','PIN 必须为 4–8 位数字');return}
+  pinSending=true;this.disabled=true;this.textContent='正在解锁…';showErr('err-pin','');
+  post('api/sim/unlock',{pin:value,request_id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}).then(function(d){
+    $('pin-value').value='';pinSending=false;$('btn-pin-unlock').textContent='解锁一次';
+    if(d._status===401){boot();return}
+    if(d.error){if(d.sim)showPIN(d.sim);showErr('err-pin',d.error);return}
+    boot();
+  }).catch(function(){
+    $('pin-value').value='';pinSending=false;$('btn-pin-unlock').textContent='解锁一次';
+    showErr('err-pin','请求中断，结果不确定。请先刷新 SIM 状态，不要直接重试。');
+  });
+};
+$('btn-pin-retry').onclick=function(){
+  if(!confirm('请确认已核实正确 PIN。再次输入错误可能锁卡，是否允许再试一次？'))return;
+  this.disabled=true;
+  post('api/sim/retry',{confirmed:true}).then(function(d){
+    $('btn-pin-retry').disabled=false;
+    if(d.error){showErr('err-pin',d.error);return}
+    showErr('err-pin','');showPIN(d);
+  }).catch(function(){$('btn-pin-retry').disabled=false;showErr('err-pin','连接中断，请刷新状态')});
+};
 
 $('btn-setup').onclick=function(){
   var p1=$('pw1').value,p2=$('pw2').value;
@@ -215,6 +264,7 @@ function load(){
     return r.json();
   }).then(function(d){
     if(!d)return;
+    if(d.sim&&d.sim.state!=='READY'){showPIN(d.sim);return}
     var st=d.status||{};
     var good=st.simReady&&st.signal&&st.signal!=='无信号';
     $('dot').className='dot'+(good?'':' bad');
@@ -243,8 +293,8 @@ $('send').onclick=function(){
   post('api/send',{number:n,text:t}).then(function(d){
     btn.disabled=false;btn.textContent='发送';
     if(d._status===401){view('login');return}
-    if(d.error){toast(d.error)}else{$('txt').value='';toast('已发送');load()}
-  }).catch(function(){btn.disabled=false;btn.textContent='发送';toast('发送失败')})
+    if(d.error){toast(d.error)}else{$('txt').value='';toast('已提交到网络，送达尚未确认');load()}
+  }).catch(function(){btn.disabled=false;btn.textContent='发送';toast('连接中断，发送结果不确定，请核对接收端后再决定是否重发')})
 };
 setInterval(function(){if($('main').style.display!=='none')load()},4000);
 boot();

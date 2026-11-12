@@ -42,7 +42,7 @@ func (m *Modem) push(l string) {
 	select {
 	case m.lines <- l:
 	default:
-		log.Printf("警告: 行缓冲已满，丢弃: %s", l)
+		log.Printf("警告: 行缓冲已满")
 	}
 }
 
@@ -208,6 +208,16 @@ func (m *Modem) SendPDU(pduHex string, dry bool) ([]string, error) {
 
 // Setup 初始化模块到服务需要的状态
 func (m *Modem) Setup() error {
+	for _, cmd := range []string{"AT", "ATE0"} {
+		if _, err := m.AT(cmd, 5*time.Second); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SMS setup is deferred until the SIM is READY, so the PIN page stays reachable.
+func (m *Modem) SetupSMS() error {
 	steps := []struct {
 		cmd string
 		key string
