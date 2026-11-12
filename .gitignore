@@ -14,3 +14,6 @@ go.sum
 .idea/
 .vscode/
 *.swp
+
+# Frontend test dependencies
+node_modules/

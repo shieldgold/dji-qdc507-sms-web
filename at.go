@@ -182,10 +182,11 @@ func (m *Modem) SendPDU(pduHex string, dry bool) ([]string, error) {
 		return []string{"DRY-RUN"}, nil
 	}
 	if _, err := m.f.WriteString(pduHex + "\x1a"); err != nil {
-		return nil, err
+		return nil, &SubmissionError{Uncertain: true, Err: err}
 	}
 	deadline2 := time.After(60 * time.Second)
 	var out []string
+	accepted := false
 	for {
 		select {
 		case l := <-m.lines:
@@ -194,14 +195,20 @@ func (m *Modem) SendPDU(pduHex string, dry bool) ([]string, error) {
 				continue
 			}
 			out = append(out, l)
+			if strings.HasPrefix(l, "+CMGS:") {
+				accepted = true
+			}
 			if l == "OK" {
+				if !accepted {
+					return out, &SubmissionError{Uncertain: true, Err: errors.New("未收到短信提交编号，请核对接收端")}
+				}
 				return out, nil
 			}
 			if l == "ERROR" || strings.HasPrefix(l, "+CMS ERROR") || strings.HasPrefix(l, "+CME ERROR") {
 				return out, fmt.Errorf("发送失败: %s", l)
 			}
 		case <-deadline2:
-			return out, errors.New("等待发送结果超时")
+			return out, &SubmissionError{Uncertain: true, Err: errors.New("等待模块发送结果超时，请核对接收端")}
 		}
 	}
 }

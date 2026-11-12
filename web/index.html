@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f6fa"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="模块助手">
+<title>模块助手</title><link rel="stylesheet" href="/style.css?v=2"><script defer src="/model.js?v=2"></script><script defer src="/app.js?v=2"></script>
+</head>
+<body>
+<div id="boot-screen" class="gate"><div class="brand-mark">4G</div><h1>模块助手</h1><p>正在连接你的模块…</p><button id="boot-retry" class="secondary" hidden>重新连接</button><p id="boot-error" class="error" hidden></p></div>
+<section id="setup" class="gate" hidden>
+ <div class="brand-mark">4G</div><h1>设置访问密码</h1><p>用一个密码保护短信。<br>这是网页访问密码，与 SIM PIN 不同。</p><div id="sim-setup" class="sim-label"></div>
+ <form id="setup-form"><label for="pw1">访问密码</label><input id="pw1" type="password" autocomplete="new-password" placeholder="至少 4 位" required><label for="pw2">再次输入</label><input id="pw2" type="password" autocomplete="new-password" required>
+ <label class="check"><input id="rm-setup" type="checkbox" checked>在此设备记住登录</label><p id="err-setup" class="error" role="alert" hidden></p><button id="btn-setup" class="primary wide">设置并继续</button></form>
+</section>
+<section id="login" class="gate" hidden>
+ <div class="brand-mark">4G</div><h1>欢迎回来</h1><p>输入网页访问密码，连接你的模块。</p><div id="sim-login" class="sim-label"></div>
+ <form id="login-form"><label for="pw">访问密码</label><input id="pw" type="password" autocomplete="current-password" placeholder="网页访问密码" required>
+ <label class="check"><input id="rm-login" type="checkbox" checked>在此设备记住登录</label><p id="err-login" class="error" role="alert" hidden></p><button id="btn-login" class="primary wide">登录</button></form>
+</section>
+<section id="pin" class="gate" hidden>
+ <div class="brand-mark">SIM</div><h1>解锁 SIM 卡</h1><p>重新上电后，请输入 SIM PIN。<br>PIN 只用于本次解锁，不会保存。</p><div id="pin-state" class="notice"></div>
+ <form id="pin-form"><label for="pin-value">SIM PIN</label><input id="pin-value" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="4–8 位数字">
+ <p id="err-pin" class="error" role="alert" hidden></p><button id="btn-pin-unlock" class="primary wide">解锁一次</button></form>
+ <button id="btn-pin-refresh" class="secondary wide">刷新 SIM 状态</button><button id="btn-pin-retry" class="text-button wide" hidden>已核实正确 PIN，允许再试一次</button><p class="caption">输入错误可能消耗 SIM 重试次数，程序不会自动重试。</p>
+</section>
+<section id="chpw" class="gate" hidden>
+ <button id="btn-chpw-back" class="text-button">返回设备</button><h1>修改访问密码</h1><form id="password-form"><label for="oldpw">当前密码</label><input id="oldpw" type="password" autocomplete="current-password"><label for="newpw1">新密码</label><input id="newpw1" type="password" autocomplete="new-password"><label for="newpw2">再次输入新密码</label><input id="newpw2" type="password" autocomplete="new-password"><p id="err-chpw" class="error" role="alert" hidden></p><button id="btn-chpw-save" class="primary wide">保存密码</button></form>
+</section>
+<div id="main" class="app" hidden>
+ <div id="connection-banner" class="connection-banner" role="status" hidden><span id="connection-text">连接中断，草稿已保留</span><button id="reconnect">重连</button></div>
+ <section id="messages-page" class="page">
+  <header class="page-header"><div><p class="eyebrow">你的随身号码</p><h1>短信</h1></div><button id="new-message" class="primary compact">新短信</button></header>
+  <div class="list-tools"><label class="search"><span>搜索</span><input id="search" type="search" placeholder="号码或短信内容" aria-label="搜索号码或短信内容"></label><div class="filter-bar"><div class="segmented"><button id="filter-all" class="selected" aria-pressed="true">全部</button><button id="filter-favorite" aria-pressed="false">收藏</button></div><span id="message-summary" class="caption"></span><button id="refresh-messages" class="text-button">刷新</button></div></div>
+  <div id="thread-list" class="thread-list scroll-area"></div>
+ </section>
+ <section id="thread-page" class="page" hidden>
+  <header class="conversation-header"><button id="thread-back" class="back-button" aria-label="返回短信列表">‹</button><div class="conversation-title"><h1 id="thread-title">新短信</h1><p id="thread-subtitle">普通短信</p></div><button id="thread-check" class="text-button">刷新</button></header>
+  <div id="recipient-row" class="recipient-row"><label for="recipient">收件人</label><input id="recipient" inputmode="tel" autocomplete="tel" placeholder="输入手机或服务号码" aria-label="收件人号码"><span id="recipient-error" class="error" hidden></span></div>
+  <div id="conversation" class="conversation scroll-area" aria-live="polite"></div>
+  <div id="send-notice" class="send-notice" role="status" hidden><span id="send-notice-text"></span><button id="check-send" class="text-button">检查结果</button><button id="dismiss-send" class="text-button" hidden>保留为草稿</button></div>
+  <form id="composer" class="composer"><label class="sr-only" for="message-text">短信内容</label><div class="compose-row"><textarea id="message-text" rows="1" maxlength="1800" placeholder="输入短信内容"></textarea><button id="send" class="primary send-button" disabled>发送</button></div><div class="compose-meta"><span id="sms-count">草稿仅保存在此设备</span><span id="draft-status"></span></div></form>
+ </section>
+ <section id="network-page" class="page scroll-area" hidden>
+  <header class="page-header"><div><p class="eyebrow">连接与用量</p><h1>网络</h1></div><button id="refresh-network" class="secondary compact">刷新</button></header>
+  <div class="panel-content"><div class="network-hero"><div class="hero-top"><span id="network-carrier">读取网络状态</span><span id="registration" class="pill">检查中</span></div><strong id="network-tech">—</strong><p id="network-band">等待模块信息</p><div class="signal-grid"><div><span>信号强度</span><b id="rsrp">—</b></div><div><span>信号质量</span><b id="rsrq">—</b></div><div><span>信噪比</span><b id="sinr">—</b></div></div></div>
+  <h2>实时速度 <span class="caption">USB 链路</span></h2><div class="speed-grid"><div class="surface metric"><span>下载</span><b id="rate-down">—</b></div><div class="surface metric"><span>上传</span><b id="rate-up">—</b></div></div>
+  <div class="surface usage"><div><span>今日</span><b id="usage-today">—</b></div><div><span>本月</span><b id="usage-month">—</b></div><div><span>累计</span><b id="usage-total">—</b></div></div><p class="caption">统计 USB 链路用量，包含管理页流量，不等同运营商账单。按手机时间校准、北京时间分日，约每分钟保存一次。</p>
+  <h2>连接信息</h2><dl class="surface detail-list"><div><dt>接入点 APN</dt><dd id="network-apn">—</dd></div><div><dt>网络状态</dt><dd id="network-status">—</dd></div><div><dt>最近更新</dt><dd id="network-updated">—</dd></div></dl>
+  <button id="run-diagnostics" class="primary wide">检查连接问题</button><div id="diagnostics" class="surface diagnostics" hidden></div><a class="external-test" href="https://www.apple.com/library/test/success.html" target="_blank" rel="noopener">打开外网测试页 ↗</a><p class="caption">验证模块 4G 时，请临时关闭 iPhone 的 Wi-Fi 和自身蜂窝数据。</p></div>
+ </section>
+ <section id="device-page" class="page scroll-area" hidden>
+  <header class="page-header"><div><p class="eyebrow">管理你的模块</p><h1>设备</h1></div><span id="app-version" class="version-tag">v2.0</span></header>
+  <div class="panel-content"><div class="surface device-card"><div class="device-glyph">4G</div><div><h2>Baiwang QDC507</h2><p id="device-uptime">模块运行中</p></div></div>
+  <dl class="surface detail-list"><div><dt>固件</dt><dd id="device-firmware">—</dd></div><div><dt>可用内存</dt><dd id="device-memory">—</dd></div><div><dt>可用存储</dt><dd id="device-storage">—</dd></div></dl>
+  <h2>短信备份</h2><div class="surface action-list"><button id="export-backup"><span><b>导出短信备份</b><small>保存到手机，包含当前归档的短信</small></span><span>↓</span></button><button id="import-backup"><span><b>恢复短信备份</b><small>合并导入，保留原有短信，不发送任何内容</small></span><span>↑</span></button></div><input id="backup-file" type="file" accept=".json,application/json" hidden><p id="backup-result" class="caption" role="status"></p>
+  <h2>访问与维护</h2><div class="surface action-list"><button id="btn-chpw"><span>修改访问密码</span><span>›</span></button><button id="rollback-version" hidden><span><b>恢复上一个网页版本</b><small>保留短信和访问密码</small></span><span>›</span></button><button id="btn-logout"><span>退出登录</span><span>›</span></button></div>
+  <div class="voice-note"><b>通话仍在准备中</b><p id="voice-state">WebRTC 可作为手机音频通道；还需配置并验证模块语音与 HTTPS。</p></div><p class="caption center">模块独立运行 · 无需 Mac 常驻</p></div>
+ </section>
+ <nav id="bottom-nav" class="bottom-nav" aria-label="主导航"><button data-page="messages" class="active" aria-current="page"><span class="nav-symbol"><svg aria-hidden="true"
+  class="lucide lucide-message-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+</svg></span><span>短信</span></button><button data-page="network"><span class="nav-symbol"><svg aria-hidden="true"
+  class="lucide lucide-radio"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M16.247 7.761a6 6 0 0 1 0 8.478" />
+  <path d="M19.075 4.933a10 10 0 0 1 0 14.134" />
+  <path d="M4.925 19.067a10 10 0 0 1 0-14.134" />
+  <path d="M7.753 16.239a6 6 0 0 1 0-8.478" />
+  <circle cx="12" cy="12" r="2" />
+</svg></span><span>网络</span></button><button data-page="device"><span class="nav-symbol"><svg aria-hidden="true"
+  class="lucide lucide-settings"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" />
+</svg></span><span>设备</span></button></nav>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<dialog id="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-detail"></p><div class="dialog-actions"><button id="confirm-cancel" class="secondary">取消</button><button id="confirm-ok" class="primary">确认</button></div></dialog>
+</body></html>

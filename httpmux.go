@@ -26,6 +26,14 @@ type Req struct {
 type Resp struct {
 	bw      *bufio.Writer
 	cookies []string
+	headers map[string]string
+}
+
+func (w *Resp) AddHeader(k, v string) {
+	if w.headers == nil {
+		w.headers = map[string]string{}
+	}
+	w.headers[k] = v
 }
 
 // AddCookie 追加一个 Set-Cookie 头
@@ -34,6 +42,12 @@ func (w *Resp) AddCookie(c string) { w.cookies = append(w.cookies, c) }
 func (w *Resp) Write(status int, contentType string, body []byte) error {
 	reason := "OK"
 	switch status {
+	case 202:
+		reason = "Accepted"
+	case 409:
+		reason = "Conflict"
+	case 413:
+		reason = "Payload Too Large"
 	case 400:
 		reason = "Bad Request"
 	case 401:
@@ -52,6 +66,11 @@ func (w *Resp) Write(status int, contentType string, body []byte) error {
 		"Content-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\nCache-Control: no-store\r\n",
 		contentType, len(body)); err != nil {
 		return err
+	}
+	for k, v := range w.headers {
+		if _, err := fmt.Fprintf(w.bw, "%s: %s\r\n", k, v); err != nil {
+			return err
+		}
 	}
 	for _, c := range w.cookies {
 		if _, err := fmt.Fprintf(w.bw, "Set-Cookie: %s\r\n", c); err != nil {
@@ -75,12 +94,18 @@ func ServeHTTP(addr string, routes map[string]Handler, fallback Handler) error {
 	if err != nil {
 		return err
 	}
+	slots := make(chan struct{}, 8)
 	for {
 		c, err := ln.Accept()
 		if err != nil {
 			continue
 		}
-		go handleConn(c, routes, fallback)
+		select {
+		case slots <- struct{}{}:
+			go func() { defer func() { <-slots }(); handleConn(c, routes, fallback) }()
+		default:
+			c.Close()
+		}
 	}
 }
 
@@ -90,7 +115,8 @@ func handleConn(c net.Conn, routes map[string]Handler, fallback Handler) {
 	br := bufio.NewReaderSize(c, 4096)
 	bw := bufio.NewWriterSize(c, 16384)
 
-	line, err := br.ReadString('\n')
+	rawLine, err := br.ReadSlice('\n')
+	line := string(rawLine)
 	if err != nil {
 		return
 	}
@@ -104,8 +130,14 @@ func handleConn(c net.Conn, routes map[string]Handler, fallback Handler) {
 		req.Query = req.Path[i+1:]
 		req.Path = req.Path[:i]
 	}
+	headerBytes := 0
 	for {
-		l, err := br.ReadString('\n')
+		raw, err := br.ReadSlice('\n')
+		l := string(raw)
+		headerBytes += len(l)
+		if headerBytes > 8192 {
+			return
+		}
 		if err != nil {
 			return
 		}
@@ -117,10 +149,27 @@ func handleConn(c net.Conn, routes map[string]Handler, fallback Handler) {
 			req.Header[strings.ToLower(strings.TrimSpace(l[:i]))] = strings.TrimSpace(l[i+1:])
 		}
 	}
+	if req.Header["transfer-encoding"] != "" {
+		_ = (&Resp{bw: bw}).Write(400, "text/plain", []byte("unsupported transfer encoding"))
+		return
+	}
 	if cl := req.Header["content-length"]; cl != "" {
-		if n, err := strconv.Atoi(cl); err == nil && n > 0 && n <= 65536 {
+		n, e := strconv.Atoi(cl)
+		if e != nil || n < 0 {
+			_ = (&Resp{bw: bw}).Write(400, "text/plain", []byte("invalid content length"))
+			return
+		}
+		limit := 32768
+		if req.Path == "/api/restore" {
+			limit = 1048576
+		}
+		if n > limit {
+			_ = (&Resp{bw: bw}).Write(413, "text/plain", []byte("request too large"))
+			return
+		}
+		if n > 0 {
 			req.Body = make([]byte, n)
-			if _, err := io.ReadFull(br, req.Body); err != nil {
+			if _, e := io.ReadFull(br, req.Body); e != nil {
 				return
 			}
 		}

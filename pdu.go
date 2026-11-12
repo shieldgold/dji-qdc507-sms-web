@@ -128,6 +128,11 @@ func abs(x int) int {
 
 // Message 一条已解码的短信
 type Message struct {
+	RequestID string `json:"request_id,omitempty"`
+	SendState string `json:"send_state,omitempty"`
+	SendError string `json:"send_error,omitempty"`
+	Parts     int    `json:"parts,omitempty"`
+	SentParts int    `json:"sent_parts,omitempty"`
 	Key       string `json:"key"`
 	Index     int    `json:"index"`
 	Sender    string `json:"sender"`
@@ -443,6 +448,12 @@ func buildSubmit(number, text string, ref int) ([]string, error) {
 			return nil, fmt.Errorf("号码含非法字符: %q", number)
 		}
 	}
+	if len(digits) > 20 {
+		return nil, errors.New("号码最多 20 位数字")
+	}
+	if len([]rune(text)) > 1600 {
+		return nil, errors.New("短信内容过长，请分成多条发送")
+	}
 	if digits == "" {
 		return nil, errors.New("号码为空")
 	}
@@ -469,6 +480,9 @@ func buildSubmit(number, text string, ref int) ([]string, error) {
 		}
 		segs := splitGSM7(text, 153)
 		total := len(segs)
+		if total > 10 {
+			return nil, errors.New("一条消息最多拆分为 10 条短信，请缩短内容")
+		}
 		var out []string
 		for i, s := range segs {
 			b, n, _ := gsm7Encode(s)
@@ -491,6 +505,9 @@ func buildSubmit(number, text string, ref int) ([]string, error) {
 	}
 	segs := splitUCS2(text, 134/2)
 	total := len(segs)
+	if total > 10 {
+		return nil, errors.New("一条消息最多拆分为 10 条短信，请缩短内容")
+	}
 	var out []string
 	for i, s := range segs {
 		uu := utf16Encode(s)

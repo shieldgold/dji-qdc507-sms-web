@@ -26,15 +26,15 @@ import (
 )
 
 const (
-	pbkdf2Iter  = 20000
+	pbkdf2Iter   = 20000
 	pbkdf2KeyLen = 32
-	sessionTTL  = 12 * time.Hour
-	rememberTTL = 365 * 24 * time.Hour
-	maxFails    = 5
-	lockoutTime = 60 * time.Second
-	tokenName   = "smsweb_token"
-	minPassword = 4
-	maxPassword = 64
+	sessionTTL   = 12 * time.Hour
+	rememberTTL  = 365 * 24 * time.Hour
+	maxFails     = 5
+	lockoutTime  = 60 * time.Second
+	tokenName    = "smsweb_token"
+	minPassword  = 4
+	maxPassword  = 64
 )
 
 type Account struct {
@@ -60,6 +60,7 @@ type failInfo struct {
 
 type AuthStore struct {
 	mu       sync.Mutex
+	loadErr  error
 	path     string
 	Accounts map[string]*Account `json:"accounts"`
 	Tokens   map[string]*Token   `json:"tokens"`
@@ -74,30 +75,35 @@ func LoadAuth(dir string) *AuthStore {
 		fails:    map[string]*failInfo{},
 	}
 	if b, err := os.ReadFile(a.path); err == nil {
-		_ = json.Unmarshal(b, a)
+		a.loadErr = json.Unmarshal(b, a)
 		if a.Accounts == nil {
 			a.Accounts = map[string]*Account{}
 		}
 		if a.Tokens == nil {
 			a.Tokens = map[string]*Token{}
 		}
+	} else if !os.IsNotExist(err) {
+		a.loadErr = err
 	}
 	a.pruneLocked()
 	return a
 }
 
-func (a *AuthStore) saveLocked() {
-	b, err := json.MarshalIndent(struct {
+func (a *AuthStore) saveLocked() error {
+	if a.loadErr != nil {
+		return errors.New("访问密码文件无法读取，已保留原文件，请从备份恢复")
+	}
+	b, err := json.Marshal(struct {
 		Accounts map[string]*Account `json:"accounts"`
 		Tokens   map[string]*Token   `json:"tokens"`
-	}{a.Accounts, a.Tokens}, "", " ")
+	}{a.Accounts, a.Tokens})
 	if err != nil {
-		return
+		return err
 	}
-	tmp := a.path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0600); err == nil {
-		_ = os.Rename(tmp, a.path)
+	if err = atomicWrite(a.path, b); err != nil {
+		return errors.New("访问设置未能保存，请检查存储空间")
 	}
+	return nil
 }
 
 func (a *AuthStore) pruneLocked() {
@@ -213,7 +219,11 @@ func (a *AuthStore) Setup(identity, imsi, number, password string, remember bool
 	if err != nil {
 		return "", err
 	}
-	a.saveLocked()
+	if err := a.saveLocked(); err != nil {
+		delete(a.Accounts, identity)
+		delete(a.Tokens, tok)
+		return "", err
+	}
 	return tok, nil
 }
 
@@ -251,7 +261,10 @@ func (a *AuthStore) Login(identity, password string, remember bool) (string, err
 	if err != nil {
 		return "", err
 	}
-	a.saveLocked()
+	if err := a.saveLocked(); err != nil {
+		delete(a.Tokens, tok)
+		return "", err
+	}
 	return tok, nil
 }
 
@@ -283,18 +296,28 @@ func (a *AuthStore) Check(token, identity string) bool {
 	return t.Identity == identity
 }
 
-func (a *AuthStore) Logout(token string) {
+func (a *AuthStore) Logout(token string) error {
 	if token == "" {
-		return
+		return nil
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	old := a.Tokens[token]
 	delete(a.Tokens, token)
-	a.saveLocked()
+	if err := a.saveLocked(); err != nil {
+		if old != nil {
+			a.Tokens[token] = old
+		}
+		return err
+	}
+	return nil
 }
 
 // ChangePassword 修改密码（需已登录）
 func (a *AuthStore) ChangePassword(identity, oldPw, newPw string) error {
+	if len(newPw) > maxPassword {
+		return errors.New("密码太长")
+	}
 	if len([]rune(newPw)) < minPassword {
 		return errors.New("新密码至少 " + strconv.Itoa(minPassword) + " 位")
 	}
@@ -326,20 +349,32 @@ func (a *AuthStore) ChangePassword(identity, oldPw, newPw string) error {
 	if acc == nil {
 		return errors.New("账号已不存在")
 	}
+	if acc.Hash != oldHash {
+		return errors.New("密码已变更，请重新登录")
+	}
+	old := *acc
+	oldTokens := a.Tokens
 	acc.Salt, acc.Hash, acc.Iter = newSalt, nh, pbkdf2Iter
 	// 改密码后踢掉其他所有会话，只保留当前这个由调用方重新发放
 	a.Tokens = map[string]*Token{}
-	a.saveLocked()
+	if err := a.saveLocked(); err != nil {
+		*acc = old
+		a.Tokens = oldTokens
+		return err
+	}
 	return nil
 }
 
 // IssueToken 修改密码后为当前会话重新发一个 token
-func (a *AuthStore) IssueToken(identity string, remember bool) string {
+func (a *AuthStore) IssueToken(identity string, remember bool) (string, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	tok, _ := a.newTokenLocked(identity, remember)
-	a.saveLocked()
-	return tok
+	if err := a.saveLocked(); err != nil {
+		delete(a.Tokens, tok)
+		return "", err
+	}
+	return tok, nil
 }
 
 func cookieValue(hdr, name string) string {

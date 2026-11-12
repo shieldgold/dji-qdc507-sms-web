@@ -61,11 +61,15 @@ fi
 echo "==> backing up and stopping the existing service"
 $A shell "set -e; umask 077; if [ -d $REMOTE_DIR ]; then tar czf /data/smsweb-before-\$(date +%Y%m%d-%H%M%S).tgz -C /data smsweb; fi; if [ -d /tmp/smsweb-supervisor.lock ]; then sh $REMOTE_DIR/start.sh stop; else kill \$(pidof smsweb) 2>/dev/null || true; fi; mkdir -p $REMOTE_DIR"
 
+echo "==> preserving previous executable"
+$A shell "set -e; mkdir -p $REMOTE_DIR/previous; if [ -s $REMOTE_DIR/smsweb ]; then cp $REMOTE_DIR/smsweb $REMOTE_DIR/previous/smsweb; chmod 700 $REMOTE_DIR/previous/smsweb; fi; sync"
+
 echo "==> pushing binary and boot script"
 $A push "$BIN" "$REMOTE_DIR/smsweb.new"
 $A push "$ROOT/deploy/start.sh" "$REMOTE_DIR/start.sh"
 $A push "$ROOT/deploy/rollback-module.sh" "$REMOTE_DIR/rollback-module.sh"
-$A shell "set -e; chmod 700 $REMOTE_DIR/smsweb.new $REMOTE_DIR/start.sh $REMOTE_DIR/rollback-module.sh; mv $REMOTE_DIR/smsweb.new $REMOTE_DIR/smsweb; sync"
+$A push "$ROOT/deploy/restore-version.sh" "$REMOTE_DIR/restore-version.sh"
+$A shell "set -e; chmod 700 $REMOTE_DIR/smsweb.new $REMOTE_DIR/start.sh $REMOTE_DIR/rollback-module.sh $REMOTE_DIR/restore-version.sh; mv $REMOTE_DIR/smsweb.new $REMOTE_DIR/smsweb; sync"
 
 if [ "$AUTOSTART" = "1" ]; then
     echo "==> installing boot hook: /etc/rcS.d/S99smsweb"

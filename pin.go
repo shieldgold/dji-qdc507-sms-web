@@ -79,6 +79,9 @@ func (p *PINController) Unlock(pin, requestID string) (PINStatus, error) {
 	if err == nil {
 		err = closeErr
 	}
+	if err == nil {
+		err = syncDirectory(filepath.Dir(p.guard))
+	}
 	if err != nil {
 		return s, errors.New("解锁保护记录未保存，未提交 PIN")
 	}

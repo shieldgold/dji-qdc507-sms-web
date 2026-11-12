@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"os"
 	"testing"
 )
 
@@ -235,4 +236,46 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+func TestAuthWriteFailureDoesNotClaimRegistration(t *testing.T) {
+	a := newTestAuth(t)
+	a.path = t.TempDir() // a directory cannot replace an auth file
+	if _, e := a.Setup("test", "", "", "abcd", true); e == nil {
+		t.Fatal("setup succeeded without durable data")
+	}
+	if a.Registered("test") || len(a.Tokens) != 0 {
+		t.Fatal("failed setup left usable credentials")
+	}
+}
+func TestCorruptAuthIsNotOverwritten(t *testing.T) {
+	dir := t.TempDir()
+	file := dir + "/auth.json"
+	if e := os.WriteFile(file, []byte(""), 0600); e != nil {
+		t.Fatal(e)
+	}
+	a := LoadAuth(dir)
+	if _, e := a.Setup("test", "", "", "abcd", true); e == nil {
+		t.Fatal("overwrote unreadable account archive")
+	}
+	b, _ := os.ReadFile(file)
+	if len(b) != 0 {
+		t.Fatal("original file changed")
+	}
+}
+func TestPasswordChangeWriteFailureRetainsOldPassword(t *testing.T) {
+	a := newTestAuth(t)
+	_, e := a.Setup("test", "", "", "old-password", true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	original := a.path
+	a.path = t.TempDir()
+	if e := a.ChangePassword("test", "old-password", "new-password"); e == nil {
+		t.Fatal("password update succeeded without durable data")
+	}
+	a.path = original
+	if _, e := a.Login("test", "old-password", false); e != nil {
+		t.Fatal("old password lost")
+	}
 }

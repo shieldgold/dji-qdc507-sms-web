@@ -34,27 +34,37 @@ var (
 )
 
 type Store struct {
-	mu   sync.RWMutex
-	Msgs map[string]*Message `json:"messages"`
-	path string
+	mu      sync.RWMutex
+	saveMu  sync.Mutex
+	loadErr error
+	Msgs    map[string]*Message `json:"messages"`
+	path    string
 }
 
 func LoadStore(dir string) *Store {
 	s := &Store{Msgs: map[string]*Message{}, path: filepath.Join(dir, "messages.json")}
 	if b, err := os.ReadFile(s.path); err == nil {
-		_ = json.Unmarshal(b, &s.Msgs)
+		s.loadErr = json.Unmarshal(b, &s.Msgs)
+		if s.Msgs == nil {
+			s.Msgs = map[string]*Message{}
+		}
 	}
 	return s
 }
 
-func (s *Store) Save() {
-	s.mu.RLock()
-	b, _ := json.Marshal(s.Msgs)
-	s.mu.RUnlock()
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0644); err == nil {
-		_ = os.Rename(tmp, s.path)
+func (s *Store) Save() error {
+	s.saveMu.Lock()
+	defer s.saveMu.Unlock()
+	if s.loadErr != nil {
+		return fmt.Errorf("短信归档无法读取，已保留原文件: %w", s.loadErr)
 	}
+	s.mu.RLock()
+	b, err := json.Marshal(s.Msgs)
+	s.mu.RUnlock()
+	if err != nil {
+		return err
+	}
+	return atomicWrite(s.path, b)
 }
 
 func (s *Store) Merge(msgs []*Message) (added int) {
@@ -77,6 +87,9 @@ func (s *Store) Merge(msgs []*Message) (added int) {
 		}
 		sort.Slice(all, func(i, j int) bool { return all[i].Time > all[j].Time })
 		for _, m := range all[300:] {
+			if m.SendState == "queued" || m.SendState == "sending" {
+				continue
+			}
 			delete(s.Msgs, m.Key)
 		}
 	}
@@ -88,7 +101,8 @@ func (s *Store) List() []*Message {
 	defer s.mu.RUnlock()
 	out := make([]*Message, 0, len(s.Msgs))
 	for _, m := range s.Msgs {
-		out = append(out, m)
+		copy := *m
+		out = append(out, &copy)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Time > out[j].Time })
 	return out
@@ -97,7 +111,11 @@ func (s *Store) List() []*Message {
 func (s *Store) Get(key string) *Message {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.Msgs[key]
+	if m := s.Msgs[key]; m != nil {
+		copy := *m
+		return &copy
+	}
+	return nil
 }
 
 func (s *Store) Delete(key string) {
@@ -179,7 +197,11 @@ type App struct {
 	auth          *AuthStore
 	pin           *PINController
 	opMu          sync.Mutex
+	actionMu      sync.Mutex
+	maintenance   bool
 	smsConfigured bool
+	outbox        *Outbox
+	monitor       *Monitor
 
 	identMu sync.Mutex
 	ident   SimIdentity
@@ -195,7 +217,7 @@ type App struct {
 func (a *App) identity() SimIdentity {
 	a.identMu.Lock()
 	defer a.identMu.Unlock()
-	if a.ident.Key == "" || a.ident.Key == "unknown" || time.Since(a.identAt) > time.Minute {
+	if a.ident.Key == "" || a.ident.Key == "unknown" || (time.Since(a.identAt) > time.Minute && (a.outbox == nil || !a.outbox.Busy())) {
 		if si := a.modem.Identity(); si.Key != "" && si.Key != "unknown" {
 			if si.Key != a.ident.Key {
 				log.Printf("SIM 身份已更新")
@@ -283,7 +305,9 @@ func (a *App) handleAuthLogin(w *Resp, r *Req) error {
 }
 
 func (a *App) handleAuthLogout(w *Resp, r *Req) error {
-	a.auth.Logout(cookieValue(r.Header["cookie"], tokenName))
+	if err := a.auth.Logout(cookieValue(r.Header["cookie"], tokenName)); err != nil {
+		return writeJSON(w, 500, map[string]string{"error": err.Error()})
+	}
 	w.AddCookie(cookieClear())
 	return writeJSON(w, 200, map[string]any{"ok": true})
 }
@@ -309,7 +333,11 @@ func (a *App) handleAuthChange(w *Resp, r *Req) error {
 	if req.Remember {
 		ttl = int(rememberTTL.Seconds())
 	}
-	w.AddCookie(cookieHeader(a.auth.IssueToken(si.Key, req.Remember), ttl))
+	tok, err := a.auth.IssueToken(si.Key, req.Remember)
+	if err != nil {
+		return writeJSON(w, 500, map[string]string{"error": "密码已修改，请重新登录"})
+	}
+	w.AddCookie(cookieHeader(tok, ttl))
 	log.Printf("访问密码已修改")
 	return writeJSON(w, 200, map[string]any{"ok": true})
 }
@@ -354,15 +382,15 @@ func writeJSON(w *Resp, code int, v any) error {
 }
 
 func (a *App) handleState(w *Resp, r *Req) error {
-	st := a.modem.Status()
 	a.mu.Lock()
 	last, lastE := a.last, a.lastE
 	a.mu.Unlock()
 	resp := map[string]any{
-		"status":   st,
 		"messages": a.store.List(),
 		"lastPoll": last.Format("15:04:05"),
-		"sim":      a.pin.Status(),
+	}
+	if !a.outbox.Busy() {
+		resp["sim"] = a.pin.Status()
 	}
 	if lastE != nil {
 		resp["lastError"] = lastE.Error()
@@ -371,45 +399,20 @@ func (a *App) handleState(w *Resp, r *Req) error {
 }
 
 func (a *App) handleSend(w *Resp, r *Req) error {
-	var req struct {
-		Number string `json:"number"`
-		Text   string `json:"text"`
-		Dry    bool   `json:"dry"` // 只验证 PDU 是否被模块接受，在 Ctrl-Z 前取消，不真正发出
+	a.actionMu.Lock()
+	defer a.actionMu.Unlock()
+	if a.maintenance {
+		return writeJSON(w, 409, map[string]string{"error": "正在切换版本，请稍后刷新"})
 	}
+	var req SendRequest
 	if err := json.Unmarshal(r.Body, &req); err != nil {
 		return writeJSON(w, 400, map[string]string{"error": "请求格式错误"})
 	}
-	a.opMu.Lock()
-	defer a.opMu.Unlock()
-	if err := a.ensureSMSLocked(); err != nil {
-		return writeJSON(w, 400, map[string]string{"error": err.Error()})
-	}
-	a.seq++
-	pdus, err := buildSubmit(req.Number, req.Text, (a.seq%255)+1)
+	m, err := a.outbox.Enqueue(req)
 	if err != nil {
 		return writeJSON(w, 400, map[string]string{"error": err.Error()})
 	}
-	for i, p := range pdus {
-		if _, err := a.modem.SendPDU(p, req.Dry); err != nil {
-			return writeJSON(w, 500, map[string]string{
-				"error": fmt.Sprintf("第 %d/%d 条发送失败: %v", i+1, len(pdus), err)})
-		}
-	}
-	if req.Dry {
-		return writeJSON(w, 200, map[string]any{"ok": true, "dry": true, "parts": len(pdus),
-			"note": "干跑通过：模块接受了 PDU，已在发送前取消"})
-	}
-	log.Printf("短信已提交（%d 条分片）", len(pdus))
-	ts := time.Now().Format("2006-01-02 15:04:05")
-	key := fmt.Sprintf("%s|%s|%x|out", req.Number, ts, req.Text)
-	a.store.mu.Lock()
-	a.store.Msgs[key] = &Message{
-		Key: key, Sender: req.Number, Body: req.Text, Time: ts,
-		Status: "已提交，送达未确认", Direction: "out", Code: detectCode(req.Text),
-	}
-	a.store.mu.Unlock()
-	a.store.Save()
-	return writeJSON(w, 200, map[string]any{"ok": true, "parts": len(pdus)})
+	return writeJSON(w, 202, m)
 }
 
 func (a *App) handleDelete(w *Resp, r *Req) error {
@@ -424,6 +427,9 @@ func (a *App) handleDelete(w *Resp, r *Req) error {
 	m := a.store.Get(req.Key)
 	if m == nil {
 		return writeJSON(w, 404, map[string]string{"error": "找不到该短信"})
+	}
+	if m.SendState == "queued" || m.SendState == "sending" {
+		return writeJSON(w, 409, map[string]string{"error": "短信正在提交，暂时不能删除"})
 	}
 	note := ""
 	if m.Index > 0 && m.Direction == "in" {
@@ -445,6 +451,7 @@ func main() {
 	// 这块模块只有 43MB 内存，尽量压低运行时开销
 	runtime.GOMAXPROCS(1)
 	debug.SetGCPercent(20)
+	debug.SetMemoryLimit(12 << 20) // Soft runtime target; excludes kernel and other module processes.
 
 	if err := os.MkdirAll(*flagData, 0700); err != nil {
 		log.Fatalf("无法创建数据目录: %v", err)
@@ -476,6 +483,9 @@ func main() {
 	}
 	app.modem = modem
 	app.pin = newPINController(modem.AT, *flagData)
+	app.outbox = NewOutbox(app.store, app.runOutgoing)
+	app.monitor = NewMonitor(modem.AT, *flagData)
+	go app.monitor.Loop()
 	modem.SetNewSMSHandler(func() { app.pollOnce() })
 	st := modem.Status()
 	log.Printf("模块就绪: 运营商=%s 信号=%s SIM=%v", st.Carrier, st.Signal, st.SimReady)
@@ -492,23 +502,38 @@ func main() {
 	}()
 
 	routes := map[string]Handler{
-		"GET /api/auth/status":  app.handleAuthStatus,
-		"POST /api/auth/setup":  app.handleAuthSetup,
-		"POST /api/auth/login":  app.handleAuthLogin,
-		"POST /api/auth/logout": app.handleAuthLogout,
-		"POST /api/auth/change": app.requireAuth(app.handleAuthChange),
-		"GET /api/state":        app.requireAuth(app.handleState),
-		"POST /api/send":        app.requireAuth(app.handleSend),
-		"POST /api/delete":      app.requireAuth(app.handleDelete),
-		"GET /api/sim":          app.requireAuth(app.handlePINStatus),
-		"POST /api/sim/unlock":  app.requireAuth(app.handlePINUnlock),
-		"POST /api/sim/retry":   app.requireAuth(app.handlePINRetry),
+		"GET /api/auth/status":           app.handleAuthStatus,
+		"POST /api/time":                 app.requireAuth(handleClientTime),
+		"POST /api/maintenance/rollback": app.requireAuth(app.handleRollback),
+		"POST /api/auth/setup":           app.handleAuthSetup,
+		"POST /api/auth/login":           app.handleAuthLogin,
+		"POST /api/auth/logout":          app.handleAuthLogout,
+		"POST /api/auth/change":          app.requireAuth(app.handleAuthChange),
+		"GET /api/overview":              app.requireAuth(app.handleOverview),
+		"POST /api/diagnostics":          app.requireAuth(app.handleDiagnostics),
+		"GET /api/export":                app.requireAuth(app.handleExport),
+		"POST /api/restore":              app.requireAuth(app.handleRestore),
+		"GET /api/state":                 app.requireAuth(app.handleState),
+		"GET /api/send/status":           app.requireAuth(app.handleSendStatus),
+		"POST /api/send":                 app.requireAuth(app.handleSend),
+		"POST /api/delete":               app.requireAuth(app.handleDelete),
+		"GET /api/sim":                   app.requireAuth(app.handlePINStatus),
+		"POST /api/sim/unlock":           app.requireAuth(app.handlePINUnlock),
+		"POST /api/sim/retry":            app.requireAuth(app.handlePINRetry),
 	}
 	fallback := func(w *Resp, r *Req) error {
-		if r.Path != "/" {
+		switch r.Path {
+		case "/":
+			return w.Write(200, "text/html; charset=utf-8", []byte(indexHTML))
+		case "/style.css":
+			return w.Write(200, "text/css; charset=utf-8", []byte(styleCSS))
+		case "/model.js":
+			return w.Write(200, "application/javascript; charset=utf-8", []byte(modelJS))
+		case "/app.js":
+			return w.Write(200, "application/javascript; charset=utf-8", []byte(appJS))
+		default:
 			return w.Write(404, "text/plain; charset=utf-8", []byte("not found"))
 		}
-		return w.Write(200, "text/html; charset=utf-8", []byte(indexHTML))
 	}
 
 	log.Printf("HTTP 监听 %s", addr)

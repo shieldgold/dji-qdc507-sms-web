@@ -1,0 +1,6 @@
+{
+  "name": "qdc507-mobile-ui-tests",
+  "private": true,
+  "scripts": {"test": "node --test scripts/tests/mobile-*.cjs"},
+  "devDependencies": {"jsdom": "31.0.0", "lucide-static": "1.72.0"}
+}
