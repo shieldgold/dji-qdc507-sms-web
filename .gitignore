@@ -17,3 +17,7 @@ go.sum
 
 # Frontend test dependencies
 node_modules/
+voice/build/
+ios/Core/.build/
+ios/**/xcuserdata/
+ios/DerivedData/

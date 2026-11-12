@@ -10,8 +10,8 @@ import (
 func (a *App) handleRollback(w *Resp, r *Req) error {
 	a.actionMu.Lock()
 	defer a.actionMu.Unlock()
-	if a.maintenance || a.outbox.Busy() {
-		return writeJSON(w, 409, map[string]string{"error": "正在处理短信或维护，请完成后再恢复版本"})
+	if a.maintenance || a.outbox.Busy() || a.calls.Busy() {
+		return writeJSON(w, 409, map[string]string{"error": "正在处理短信、通话或维护，请完成后再恢复版本"})
 	}
 	dir := filepath.Dir(a.store.path)
 	if dir != "/data/smsweb" {

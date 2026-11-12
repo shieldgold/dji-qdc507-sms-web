@@ -1,0 +1,45 @@
+name: ModulePhone
+options:
+  bundleIdPrefix: com.shield.modulephone
+  deploymentTarget:
+    iOS: '17.0'
+packages:
+  ModuleCore:
+    path: Core
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    DEVELOPMENT_TEAM: JM394W6UR5
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: 0.1.0
+    CURRENT_PROJECT_VERSION: 1
+targets:
+  ModulePhone:
+    type: application
+    platform: iOS
+    sources: [ModulePhone]
+    dependencies:
+      - package: ModuleCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shield.modulephone
+        TARGETED_DEVICE_FAMILY: '1,2'
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 模块电话
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: 通过 USB 或局域网连接你的 4G 模块，读取短信并进行通话。
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: 将你的声音传送给连接的 4G 模块，用于电话通话。
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    info:
+      path: ModulePhone/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            192.168.225.1:
+              NSExceptionAllowsInsecureHTTPLoads: true
+        UIBackgroundModes: [audio, voip]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]

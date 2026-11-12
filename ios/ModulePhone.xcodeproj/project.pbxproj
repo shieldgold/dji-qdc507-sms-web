@@ -1,0 +1,359 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		119E1EEC7EEB48435575FF7C /* ModuleAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */; };
+		45531CEAA01CBA0F0E00CD0C /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C59756AE0A24FB36D3F911F /* CallManager.swift */; };
+		639B5C6B0A547C998AEC9A74 /* ModulePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */; };
+		A9649AB9478605C889A95E22 /* AudioBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */; };
+		EBD275C5BFF9292174532F37 /* ModuleCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3216E5BA56D77035B9FA02F5 /* ModuleCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		09660B5B4528F0300B9D145D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModulePhoneApp.swift; sourceTree = "<group>"; };
+		4C59756AE0A24FB36D3F911F /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
+		98990DBADD5F36F3B2F53EA7 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
+		A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBridge.swift; sourceTree = "<group>"; };
+		DF814785736BA843E765152E /* ModulePhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ModulePhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModuleAPI.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8C3D25BE59E5836CCF1EA014 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBD275C5BFF9292174532F37 /* ModuleCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		36CE981B9B6C126CFC78B38D = {
+			isa = PBXGroup;
+			children = (
+				F03023A9020CC75B805AFDE6 /* ModulePhone */,
+				FE0018903AC8C9F26D8AD318 /* Packages */,
+				372455466A3BCF5586392128 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		372455466A3BCF5586392128 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DF814785736BA843E765152E /* ModulePhone.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F03023A9020CC75B805AFDE6 /* ModulePhone */ = {
+			isa = PBXGroup;
+			children = (
+				A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */,
+				4C59756AE0A24FB36D3F911F /* CallManager.swift */,
+				09660B5B4528F0300B9D145D /* Info.plist */,
+				F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */,
+				4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */,
+			);
+			path = ModulePhone;
+			sourceTree = "<group>";
+		};
+		FE0018903AC8C9F26D8AD318 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				98990DBADD5F36F3B2F53EA7 /* Core */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F892C67B4488B7861B0DE6CD /* ModulePhone */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E636F2E03CE70ED264FB373D /* Build configuration list for PBXNativeTarget "ModulePhone" */;
+			buildPhases = (
+				8AC67418413894717BCAC666 /* Sources */,
+				8C3D25BE59E5836CCF1EA014 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ModulePhone;
+			packageProductDependencies = (
+				3216E5BA56D77035B9FA02F5 /* ModuleCore */,
+			);
+			productName = ModulePhone;
+			productReference = DF814785736BA843E765152E /* ModulePhone.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		247B144FC0AB5E805AD93526 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					F892C67B4488B7861B0DE6CD = {
+						DevelopmentTeam = JM394W6UR5;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 2658A8F54C240B08BF9E0E06 /* Build configuration list for PBXProject "ModulePhone" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 36CE981B9B6C126CFC78B38D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				34A557DD1DA398F65E606511 /* XCLocalSwiftPackageReference "Core" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 372455466A3BCF5586392128 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F892C67B4488B7861B0DE6CD /* ModulePhone */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8AC67418413894717BCAC666 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9649AB9478605C889A95E22 /* AudioBridge.swift in Sources */,
+				45531CEAA01CBA0F0E00CD0C /* CallManager.swift in Sources */,
+				119E1EEC7EEB48435575FF7C /* ModuleAPI.swift in Sources */,
+				639B5C6B0A547C998AEC9A74 /* ModulePhoneApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		6FC2DFB0C15E6516C9C7F2B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ModulePhone/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "模块电话";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "通过 USB 或局域网连接你的 4G 模块，读取短信并进行通话。";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "将你的声音传送给连接的 4G 模块，用于电话通话。";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shield.modulephone;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AEE25A15D9238BF64D67E7AF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = JM394W6UR5;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		CAE7F12BA5E2BEF9D0B7F8F5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ModulePhone/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "模块电话";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "通过 USB 或局域网连接你的 4G 模块，读取短信并进行通话。";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "将你的声音传送给连接的 4G 模块，用于电话通话。";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shield.modulephone;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D0B7CB58FB8FB22880F5AE86 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = JM394W6UR5;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2658A8F54C240B08BF9E0E06 /* Build configuration list for PBXProject "ModulePhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AEE25A15D9238BF64D67E7AF /* Debug */,
+				D0B7CB58FB8FB22880F5AE86 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E636F2E03CE70ED264FB373D /* Build configuration list for PBXNativeTarget "ModulePhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CAE7F12BA5E2BEF9D0B7F8F5 /* Debug */,
+				6FC2DFB0C15E6516C9C7F2B0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		34A557DD1DA398F65E606511 /* XCLocalSwiftPackageReference "Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Core;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3216E5BA56D77035B9FA02F5 /* ModuleCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ModuleCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 247B144FC0AB5E805AD93526 /* Project object */;
+}

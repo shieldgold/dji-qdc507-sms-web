@@ -202,6 +202,8 @@ type App struct {
 	smsConfigured bool
 	outbox        *Outbox
 	monitor       *Monitor
+	calls         *CallController
+	callAudio     *CallAudio
 
 	identMu sync.Mutex
 	ident   SimIdentity
@@ -343,6 +345,9 @@ func (a *App) handleAuthChange(w *Resp, r *Req) error {
 }
 
 func (a *App) pollOnce() {
+	if a.calls.Busy() {
+		return
+	}
 	a.opMu.Lock()
 	defer a.opMu.Unlock()
 	if err := a.ensureSMSLocked(); err != nil {
@@ -403,6 +408,9 @@ func (a *App) handleSend(w *Resp, r *Req) error {
 	defer a.actionMu.Unlock()
 	if a.maintenance {
 		return writeJSON(w, 409, map[string]string{"error": "正在切换版本，请稍后刷新"})
+	}
+	if a.calls.Busy() {
+		return writeJSON(w, 409, map[string]string{"error": "电话正在进行，请结束后再发送短信"})
 	}
 	var req SendRequest
 	if err := json.Unmarshal(r.Body, &req); err != nil {
@@ -485,6 +493,15 @@ func main() {
 	app.pin = newPINController(modem.AT, *flagData)
 	app.outbox = NewOutbox(app.store, app.runOutgoing)
 	app.monitor = NewMonitor(modem.AT, *flagData)
+	app.calls = newCallController(modem.AT, *flagData)
+	app.callAudio = newCallAudio(app.calls, *flagData)
+	app.monitor.paused = app.calls.Busy
+	go app.calls.Loop()
+	go func() {
+		if e := app.callAudio.Serve(*flagListen + ":8788"); e != nil {
+			log.Printf("电话音频服务: %v", e)
+		}
+	}()
 	go app.monitor.Loop()
 	modem.SetNewSMSHandler(func() { app.pollOnce() })
 	st := modem.Status()
@@ -518,6 +535,12 @@ func main() {
 		"POST /api/send":                 app.requireAuth(app.handleSend),
 		"POST /api/delete":               app.requireAuth(app.handleDelete),
 		"GET /api/sim":                   app.requireAuth(app.handlePINStatus),
+		"GET /api/calls":                 app.requireAuth(app.handleCalls),
+		"POST /api/calls/dial":           app.requireAuth(app.handleCallDial),
+		"POST /api/calls/answer":         app.requireAuth(app.handleCallAnswer),
+		"POST /api/calls/hangup":         app.requireAuth(app.handleCallHangup),
+		"POST /api/calls/dtmf":           app.requireAuth(app.handleCallDTMF),
+		"POST /api/calls/audio":          app.requireAuth(app.handleCallAudio),
 		"POST /api/sim/unlock":           app.requireAuth(app.handlePINUnlock),
 		"POST /api/sim/retry":            app.requireAuth(app.handlePINRetry),
 	}

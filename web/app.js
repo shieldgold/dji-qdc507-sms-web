@@ -208,7 +208,7 @@ function renderOverview(data){
  text('rate-down',bytes(t.rate&&t.rate.download)+'/s');text('rate-up',bytes(t.rate&&t.rate.upload)+'/s');text('usage-today',t.clock_valid?bytes(total(t.today)):'时间未同步');text('usage-month',t.clock_valid?bytes(total(t.month)):'时间未同步');text('usage-total',bytes(total(t.total)));
  text('network-apn',n.apn||'—');text('network-status',n.error||n.registration||'—');text('network-updated',n.updated_at?timeLabel(n.updated_at,true):'—');
  text('app-version','v'+(d.version||'2.0.0'));text('device-uptime','已运行 '+uptime(d.uptime));text('device-firmware',d.firmware||'读取中');text('device-memory',bytes(d.memory_available)+' / '+bytes(d.memory_total));text('device-storage',bytes(d.disk_available)+' / '+bytes(d.disk_total));$('rollback-version').hidden=!d.rollback_available;
- text('voice-state','IMS 配置：'+(n.ims||'待检测')+'；音频设备：'+(d.audio_ready?'已发现，通话仍需验证':'尚未就绪')+'。WebRTC 还需完成语音桥和 HTTPS 配置。');
+ text('voice-state','IMS 配置：'+(n.ims||'待检测')+'；音频设备：'+(d.audio_ready?'已发现，通话仍需验证':'尚未就绪')+'。请使用“模块电话”App，iPhone 直连后的双向声音仍需验证。');
 }
 async function refreshOverview(){try{const data=await api('/api/overview');S.overview=data;renderOverview(data);}catch(err){if(err.status===401)boot();else toast('网络信息暂时无法刷新');}}
 $('refresh-network').addEventListener('click',refreshOverview);

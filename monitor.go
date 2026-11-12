@@ -46,6 +46,7 @@ type Monitor struct {
 	network   NetworkSnapshot
 	firmware  string
 	traffic   *Traffic
+	paused    func() bool
 }
 
 func NewMonitor(command func(string, time.Duration) ([]string, error), dir string) *Monitor {
@@ -111,6 +112,9 @@ func applyNetworkLine(n *NetworkSnapshot, line string) {
 	}
 }
 func (m *Monitor) Refresh() {
+	if m.paused != nil && m.paused() {
+		return
+	}
 	m.refreshMu.Lock()
 	defer m.refreshMu.Unlock()
 	n := NetworkSnapshot{Registration: "未知", IMS: "未知"}

@@ -1,6 +1,6 @@
 # dji-qdc507-sms-web
 
-> This branch adds SIM PIN unlocking and standalone boot supervision. See [iPhone 直连部署与回滚](IPHONE_DIRECT.md) for the verified deployment scope.
+> This branch adds standalone SMS management and an experimental native iOS calling app. See [deployment and rollback](IPHONE_DIRECT.md) and [iOS calling status and setup](IOS_CALLING.md). Direct iPhone two-way audio acceptance is still pending.
 
 **Read and send SMS — including verification codes — on an iPad, iPhone, or any browser-only device, using a cheap DJI Cellular 4G module.**
 
@@ -75,7 +75,7 @@ and send SMS over the module's SIM card. No app, no cloud, no computer, no inter
 ## Requirements
 
 - **A DJI Cellular 4G module, first generation** — Baiwang **QDC507** (sold as a DJI drone accessory for ~$5). A Quectel EG25-G with the same USB layout should also work.
-- A SIM card with **data + SMS** (voice is not needed and does not work on this module).
+- A SIM card with **data + SMS** (voice is not needed for SMS; calling requires a voice-enabled SIM and the experimental runtime).
 - Any host to deploy from (macOS/Linux/Windows) with **`adb`** and a **USB data cable**.
 - To build: **Go 1.21** (see [Why Go 1.21](#why-go-121--an-important-build-constraint)).
 
@@ -290,7 +290,7 @@ exactly as it did before.
 2. **~40 s after power-up** before the web UI responds (the module's Linux has to boot).
 3. **Plain HTTP** on the module's private USB link. The password is stored with PBKDF2, but traffic is not encrypted in transit — acceptable given only the device the module is plugged into can reach it. HTTPS could be added.
 4. **Archive capped at 300 messages**; the oldest are pruned.
-5. **No voice.** The module's firmware has its audio path stripped out, so calls are not possible — this project is SMS-only.
+5. **Experimental voice.** This branch adds a native iOS app and module-side audio runtime. Call control has been exercised; direct iPhone two-way audio and background incoming calls are not accepted. See [IOS_CALLING.md](IOS_CALLING.md).
 6. **Modifying the module is not officially supported.** Enabling ADB changes an NV setting and reboots the module. It is reversible and widely done by the community, but you do it at your own risk.
 
 ---

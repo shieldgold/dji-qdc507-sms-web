@@ -1,6 +1,6 @@
 # dji-qdc507-sms-web
 
-> This branch adds SIM PIN unlocking and standalone boot supervision. See [iPhone 直连部署与回滚](IPHONE_DIRECT.md) for the verified deployment scope.
+> 本分支提供模块独立运行的短信管理和实验性 iOS 通话 App。部署与回退见 [IPHONE_DIRECT.md](IPHONE_DIRECT.md)，通话实现与验收状态见 [IOS_CALLING.md](IOS_CALLING.md)。iPhone 直连后的双向声音仍待验收。
 
 **用一块几十块钱的大疆 4G 模块，让 iPad、iPhone 或任何只能开浏览器的设备收发短信、拿到验证码。**
 
@@ -76,7 +76,7 @@ QDC507 不是一块傻网卡，它**本质上是一台完整的 Linux 小电脑*
 ## 环境要求
 
 - **大疆一代 4G 模块**（Baiwang **QDC507**，闲鱼几十块）。USB 布局相同的 Quectel EG25-G 理论上也行。
-- 一张**能上网、能收短信**的 SIM 卡（语音不需要，这块模块也做不到）。
+- 一张**能上网、能收短信**的 SIM 卡（短信不需要语音；实验性通话功能需要开通语音业务及部署额外运行时）。
 - 一台用于部署的电脑（macOS / Linux / Windows）+ **`adb`** + **能传数据的 USB 线**。
 - 编译需要 **Go 1.21**（原因见 [为什么必须用 Go 1.21](#为什么必须用-go-121)。
 
@@ -270,7 +270,7 @@ adb shell "kill \$(pidof smsweb); rm -rf /data/smsweb; sync"
 2. **上电后约 40 秒**网页才能访问（模块里的 Linux 要启动）。
 3. **明文 HTTP**（跑在模块私有 USB 链路上）。密码本身是 PBKDF2 存储，但传输未加密——考虑到只有插着模块的那台设备能访问，风险可控。需要的话可以加 HTTPS。
 4. **归档上限 300 条**，超出自动清理最旧的。
-5. **没有语音**。模块固件把音频出口裁剪了，打不了电话——本项目只做短信。
+5. **实验性语音**。本分支已增加 iOS 原生 App 与模块内音频运行时，并验证了短电话接通和挂断。iPhone 直连双向声音及后台来电尚未验收，详见 [IOS_CALLING.md](IOS_CALLING.md)。
 6. **改装不受官方支持**。打开 ADB 会改动一项 NV 设置并重启模块，可逆、社区普遍在做，但请自担风险。
 
 ---

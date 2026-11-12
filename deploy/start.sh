@@ -16,6 +16,9 @@ case "${1:-start}" in
     echo $$ > "$LOCK/pid"
     child=
     trap '[ -z "$child" ] || kill "$child" 2>/dev/null || true; rm -f "$D/service.pid" "$LOCK/pid"; rmdir "$LOCK" 2>/dev/null || true; exit 0' TERM INT EXIT
+    if [ -x "$D/voice-runtime/prepare.sh" ]; then
+      busybox timeout -t 25 /bin/sh "$D/voice-runtime/prepare.sh" > /tmp/smsweb-voice-prepare.log 2>&1 || true
+    fi
     while [ -x "$D/smsweb" ]; do
       for log in "$D/smsweb.log" "$D/run.log"; do
         if [ -f "$log" ] && [ "$(wc -c < "$log")" -gt 262144 ]; then mv "$log" "$log.1"; fi
