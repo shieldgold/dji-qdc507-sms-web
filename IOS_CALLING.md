@@ -1,6 +1,6 @@
 # iOS App 直连模块通话
 
-当前版本：0.2.0，开发验证版。模块运行服务和声音桥，iPhone 运行“模块电话”App；日常使用不依赖 Mac。
+当前版本：0.3.0，开发验证版。模块运行服务和声音桥，iPhone 运行“模块电话”App；日常使用不依赖 Mac。
 
 ## 当前验收状态（2026-11-13）
 
@@ -14,15 +14,15 @@
 - 用户报告 App 拨号在对端接通后很快挂断。iPhone 15 Pro 上不拨号的硬件测试复现：引擎启动成功，但 22 秒内麦克风字节数为 0；固定主混音器到硬件输出的原生采样率后恢复采集，避免 8 kHz 传输格式影响硬件图。模块原有 6 秒上行超时会结束绑定电话，与此故障相符；原通话临时日志已因重新上电丢失，不能据此声称已取得原通话完整日志。
 - 同一实机测试发现 iOS 实际每批给出 100 ms 音频，旧的 4 帧并发限制会固定丢弃第 5 帧；已按批发送并限制最多 200 ms 排队。修复后约 12 秒收到 193,280 字节，取消轮询不再用“请求已取消”覆盖已有通话错误。测试仅统计字节、不保存音频。
 - 2026-11-13 安装修复版后，用户按保持至少 30 秒、双方说话的步骤复测，反馈“通话稳定，双方都有声音”；随后进一步反馈连续讲话越久、声音越落后。模块周期对齐修复部署后，用户再次真实通话复测，确认“明显改善，不再越说越落后”。
-- **真实外呼稳定、双方有声，以及连续讲话延迟不再逐渐累积，均已获用户复测确认；来电接听、蓝牙/扬声器切换仍未验收。**
-- 来电发现依赖 App 前台轮询。CallKit 提供系统通话界面，未实现 PushKit/APNs 后台来电唤醒；不能当作普通手机电话的全天候替代。
+- **真实外呼稳定、双方有声，以及连续讲话延迟不再逐渐累积，均已获用户复测确认；后台锁屏来电的系统界面、接听及双向声音也已获用户确认；蓝牙/扬声器切换仍未验收。**
+- 已接入 APNs 短信推送和 PushKit → CallKit 来电唤醒，模块直接通过 HTTP/2 连接苹果，无第三方中转。登记、苹果接收和真实锁屏显示分别验收；用户已确认真实手机登记、锁屏测试推送、新短信提醒，以及锁屏来电接听和双向声音，见 [后台通知](BACKGROUND_NOTIFICATIONS.md)。
 
 ## 在 iPhone 上使用
 
 1. 将模块接到支持供电与 USB 网络的 iPhone 连接方式，确认能打开 `http://192.168.225.1:8787`。
 2. 在 App“连接设置”中输入模块访问密码，可保存到这台 iPhone 的系统钥匙串。需要 PIN 时可选择保存并自动解锁；模块端不保存 PIN。检测到换卡会清除原卡凭据，即使换回原卡也需要重新输入。
 3. 打开“模块电话”→“连接设置”，使用原有模块网页访问密码登录。初次设置密码可在“短信与模块”页完成。
-4. 同意本地网络和麦克风权限。短信提醒在首页右上角“通知”中单独开启；音频运行时未就绪时禁用拨号，来电测试期间保持 App 前台。
+4. 同意本地网络和麦克风权限。短信提醒在首页右上角“通知”中单独开启；音频运行时未就绪时禁用拨号。后台通知需在“通知”中开启，并完成锁屏推送测试。
 5. 实测时分别确认：对端响铃、接通状态、双方声音、静音、扬声器、挂断后模块数据连接继续工作。
 
 没有音频时先查看 `/tmp/smsweb-voice-prepare.log`、`/tmp/smsweb-alsaucm.log` 和 `/tmp/smsweb-voice.log`。`audio.available` 表示运行时准备完成；`streaming` 和字节计数表示数据流动，均不代替听感验收。
@@ -33,8 +33,8 @@
 
 - App 图标为深青绿色背景与白色电话、SIM 模块组合；1024px 原图和首页图标均包含在资产目录，见 [图标设计说明](ios/ICON_DESIGN.md)。
 - 前台每约 4 秒同步短信，首批历史不提醒，新增收件通知去重并跨重启保存状态。只持久化消息键的 SHA-256，不保存短信正文或包含正文编码的原始键；通知隐藏发件人、正文和验证码。点击新短信通知进入短信面板，打开面板清除“新短信”角标。
-- 前台发现来电沿用 CallKit 系统接听界面。锁屏／后台的新短信与来电唤醒仍未接入。测试通知只验证系统横幅显示，不能证明后台事件可达。
-- 下一阶段后台链路需模块通过认证 HTTPS 上报事件到推送服务，短信使用 APNs 普通通知，来电使用 PushKit 并立即向 CallKit 报告；需配置推送能力、设备令牌绑定及服务器凭据。本次未部署该链路。Apple 文档：[后台执行](https://developer.apple.com/documentation/uikit/extending-your-app-s-background-execution-time)、[APNs 注册](https://developer.apple.com/documentation/usernotifications/registering-your-app-with-apns)、[PushKit 来电](https://developer.apple.com/documentation/pushkit/responding-to-voip-notifications-from-pushkit)。
+- 前台发现来电沿用 CallKit 系统接听界面。0.3.0 增加后台短信和来电推送；“仅测试本机横幅”只验证显示，“测试后台推送”由模块延迟发送，使用真实后台通道。
+- 0.3.0 的后台链路使用模块直连苹果 APNs（HTTP/2 + TLS）；短信发送普通通知，来电使用 PushKit 并立即向 CallKit 报告。部署与验收记录见 [后台通知](BACKGROUND_NOTIFICATIONS.md)。Apple 文档：[后台执行](https://developer.apple.com/documentation/uikit/extending-your-app-s-background-execution-time)、[APNs 注册](https://developer.apple.com/documentation/usernotifications/registering-your-app-with-apns)、[PushKit 来电](https://developer.apple.com/documentation/pushkit/responding-to-voip-notifications-from-pushkit)。
 
 访问密码与 SIM PIN 分别保存到 iOS 系统钥匙串，限制为本设备、解锁后访问且不同步 iCloud。每次连接先请求 `GET /api/sim/binding` 实时读取 ICCID；读不到卡号不会复用缓存或发送保存的凭据。换卡时替换为空凭据记录并持久化“需重新登录”，防止重启 App 或换回旧卡绕过重新输入。登录和 PIN 请求携带 `expected_iccid`，模块在提交前再次实时核对；PIN 还会在实时核对后重新检查当前卡的会话归属。
 

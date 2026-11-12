@@ -50,23 +50,30 @@ struct NotificationSettingsView: View {
                     } else { Button("开启短信通知") { Task { await notifications.enable() } } }
                     Button("系统通知设置") { openURL(URL(string: UIApplication.openNotificationSettingsURLString)!) }
                 } header: { Text("短信提醒") } footer: {
-                    Text("App 在前台并连接模块时，新短信会显示通知和角标。通知中不展示号码、正文或验证码。首次同步历史短信不会提醒。")
+                    Text("开启后由模块发送新短信提醒，切换 App 或锁屏仍可接收。通知不展示号码、正文或验证码；首次登记不提醒历史短信。")
                 }
                 Section("来电提醒") {
-                    Label("前台来电使用系统接听界面", systemImage: "phone.badge.waveform")
-                    Text("保持 App 前台并连接模块，来电会调用系统通话界面，可接听或拒接。已接通电话可以继续使用系统通话控制。").font(.subheadline).foregroundStyle(.secondary)
+                    Toggle("后台来电提醒", isOn: $notifications.callsEnabled)
+                    Text("来电时显示系统接听界面。接听和通话需要 iPhone 保持与模块的 USB 网络连接。").font(.subheadline).foregroundStyle(.secondary)
                 }
                 Section("锁屏与后台") {
-                    Label("后台新短信／来电唤醒尚未接入", systemImage: "moon.zzz")
-                    Text("切换 App 或锁屏后，系统可能暂停连接，无法保证发现新的短信或来电。重新打开后会同步新增短信。开启系统通知权限不会解除这一限制。").font(.subheadline).foregroundStyle(.secondary)
+                    if let status = notifications.pushStatus {
+                        Label(status.configured ? "模块推送服务已配置" : "等待配置推送服务", systemImage: status.configured ? "checkmark.circle" : "clock")
+                        LabeledContent("来电登记", value: status.callsEnabled ? "已登记" : "未登记")
+                        LabeledContent("等待发送", value: "\(status.queued)")
+                        LabeledContent("本次运行苹果已接收", value: "\(status.accepted)")
+                    } else { Text("请连接模块以登记后台通知。") }
+                    Text("模块需要持续供电并可上网；iPhone 也需联网。登记成功不等于通知已显示，请用下方测试验证锁屏接收。重启 iPhone 后需先解锁一次。").font(.subheadline).foregroundStyle(.secondary)
                 }
                 Section {
-                    Button(testing ? "3 秒后显示测试通知" : "测试通知") {
+                    Button(testing ? "请锁屏等待推送" : "测试后台推送") {
                         testing = true
-                        Task { await notifications.testNotification(); try? await Task.sleep(for: .seconds(4)); testing = false }
-                    }.disabled(!notifications.enabled || !notifications.permitted || testing)
+                        Task { await notifications.testBackgroundPush(); try? await Task.sleep(for: .seconds(9)); testing = false }
+                    }.disabled(!notifications.enabled || !notifications.permitted || testing || !notifications.backgroundSMSRegistered)
+                    Button("仅测试本机横幅") { Task { await notifications.testNotification() } }
+                        .disabled(!notifications.enabled || !notifications.permitted)
                     if !notifications.error.isEmpty { Text(notifications.error).foregroundStyle(.red) }
-                } footer: { Text("测试只检查系统通知显示，不代表后台接收已接通。") }
+                } footer: { Text("后台测试由模块延迟发送，经过与真实短信相同的推送路径。本机横幅测试不经过模块。") }
             }.navigationTitle("通知").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
                 .task { await notifications.refreshPermission() }

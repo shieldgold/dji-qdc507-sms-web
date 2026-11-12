@@ -4,6 +4,7 @@ import SwiftUI
 import ModuleCore
 
 @MainActor final class CallManager: NSObject, ObservableObject, @preconcurrency CXProviderDelegate {
+ static let shared = CallManager()
  @Published var address = "http://192.168.225.1:8787"
  @Published var number = ""
  @Published var connected = false
@@ -33,6 +34,7 @@ import ModuleCore
  private var outgoingAt = Date.distantPast
  private var endPending = false
  private var cancelUncertainDial = false
+ private var foreground = true
  var current: VoiceCall? { status?.telephone.calls.first }
  var hasCall: Bool { current != nil || localPending || status?.telephone.pending == true }
  override init() {
@@ -81,6 +83,7 @@ import ModuleCore
   }
  }
  func setForeground(_ foreground: Bool) {
+  self.foreground = foreground
   if foreground { if !busy && !hasCall { Task { await connect(password: "") } } else { startPolling() } }
   else if !hasCall { polling?.cancel(); polling = nil }
  }
@@ -96,7 +99,7 @@ import ModuleCore
    if let call = next.telephone.calls.first {
     localPending = false; currentID = call.id
     if uuid == nil {
-     let id = UUID(); uuid = id
+     let id = call.isIncoming ? IncomingPush.uuid(for: call.id) : UUID(); uuid = id
      let update = CXCallUpdate(); update.remoteHandle = CXHandle(type: .phoneNumber, value: call.number.isEmpty ? "未知号码" : call.number)
      update.hasVideo = false; update.supportsDTMF = true; update.supportsHolding = false; update.supportsGrouping = false; update.supportsUngrouping = false
      if call.isIncoming {
@@ -120,6 +123,54 @@ import ModuleCore
    // must not overwrite the preceding call/audio error with "request cancelled".
    guard !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
    if generation == endpointGeneration { connected = false; self.error = error.localizedDescription }
+  }
+ }
+ func receiveIncomingPush(_ payload: [AnyHashable: Any], completion: @escaping () -> Void) {
+  let incoming = IncomingPush(payload)
+  let id = incoming?.uuid ?? UUID()
+  let update = CXCallUpdate()
+  update.localizedCallerName = "模块来电"; update.hasVideo = false
+  update.supportsDTMF = true; update.supportsHolding = false
+  update.supportsGrouping = false; update.supportsUngrouping = false
+  let occupied = uuid != nil && uuid != id
+  let alreadyKnown = uuid == id
+  if !occupied, !alreadyKnown, let incoming {
+   uuid = id; currentID = incoming.callID; localPending = true; outgoingAt = Date()
+  }
+  provider.reportNewIncomingCall(with: id, update: update) { [weak self] failure in
+   completion()
+   Task { @MainActor in
+    guard let self else { return }
+    if occupied || incoming == nil {
+     if failure == nil { self.provider.reportCall(with: id, endedAt: Date(), reason: .failed) }
+     return
+    }
+    if failure != nil && !alreadyKnown {
+     if self.uuid == id { self.clearCall() }
+     return
+    }
+    await self.verifyIncomingPush(incoming!)
+   }
+  }
+ }
+ private func verifyIncomingPush(_ incoming: IncomingPush) async {
+  do {
+   let next = try await api.state()
+   guard uuid == incoming.uuid else { return }
+   guard let call = next.telephone.calls.first(where: { $0.id == incoming.callID }),
+         call.direction == "in", ["incoming", "waiting", "active"].contains(call.state) else {
+    provider.reportCall(with: incoming.uuid, endedAt: Date(), reason: .remoteEnded); clearCall(); return
+   }
+   status = next; loggedIn = true; connected = true; localPending = false
+   let update = CXCallUpdate()
+   update.remoteHandle = CXHandle(type: .phoneNumber, value: call.number.isEmpty ? "未知号码" : call.number)
+   update.localizedCallerName = call.number.isEmpty ? "模块来电" : nil
+   provider.reportCall(with: incoming.uuid, updated: update)
+   startPolling()
+  } catch {
+   guard uuid == incoming.uuid else { return }
+   self.error = "来电暂无法连接模块，请解锁 iPhone 并重新连接。"
+   provider.reportCall(with: incoming.uuid, endedAt: Date(), reason: .failed); clearCall()
   }
  }
  func dial() async {
@@ -182,6 +233,7 @@ import ModuleCore
  }
  private func clearCall() {
   audioSessionID = nil; audio.stop(); audio.setMuted(false); uuid = nil; currentID = nil; connectedReported = false; activated = false; audioStarted = false; localPending = false; microphoneConnected = false; endPending = false; cancelUncertainDial = false; muted = false; speaker = false
+  if !foreground { polling?.cancel(); polling = nil }
  }
  func providerDidReset(_ provider: CXProvider) { audioSessionID = nil; audio.stop(); activated = false; audioStarted = false; Task { await performHangup(); await refresh() } }
  func provider(_ provider: CXProvider, perform action: CXStartCallAction) {

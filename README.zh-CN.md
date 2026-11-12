@@ -1,6 +1,6 @@
 # dji-qdc507-sms-web
 
-> 本分支提供模块独立运行的短信管理和实验性 iOS 通话 App。部署与回退见 [IPHONE_DIRECT.md](IPHONE_DIRECT.md)，通话实现与验收状态见 [IOS_CALLING.md](IOS_CALLING.md)。用户已确认 iPhone 真实外呼稳定、双方有声；模块修复后延迟明显改善，不再越说越落后。
+> 本分支提供模块独立运行的短信管理和实验性 iOS 通话 App。部署与回退见 [IPHONE_DIRECT.md](IPHONE_DIRECT.md)，通话实现与验收状态见 [IOS_CALLING.md](IOS_CALLING.md)。用户已确认 iPhone 真实外呼稳定、双方有声；模块修复后延迟明显改善，不再越说越落后。0.3.0 增加模块直连苹果的短信／来电后台通知，配置与验收见 [BACKGROUND_NOTIFICATIONS.md](BACKGROUND_NOTIFICATIONS.md)。
 
 **用一块几十块钱的大疆 4G 模块，让 iPad、iPhone 或任何只能开浏览器的设备收发短信、拿到验证码。**
 

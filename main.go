@@ -204,6 +204,7 @@ type App struct {
 	monitor       *Monitor
 	calls         *CallController
 	callAudio     *CallAudio
+	push          *PushService
 
 	identMu sync.Mutex
 	ident   SimIdentity
@@ -485,6 +486,7 @@ func main() {
 	log.Printf("=== smsweb 启动 (AT=%s port=%s) ===", *flagAT, *flagPort)
 
 	app := &App{store: LoadStore(*flagData), auth: LoadAuth(*flagData)}
+	applicationTime.Load(*flagData)
 
 	var modem *Modem
 	for i := 0; i < 60; i++ {
@@ -509,6 +511,8 @@ func main() {
 	app.monitor = NewMonitor(modem.AT, *flagData)
 	app.calls = newCallController(modem.AT, *flagData)
 	app.callAudio = newCallAudio(app.calls, *flagData)
+	app.push = loadPush(*flagData)
+	go app.pushLoop()
 	app.monitor.paused = app.calls.Busy
 	go app.calls.Loop()
 	go func() {
@@ -534,6 +538,9 @@ func main() {
 
 	routes := map[string]Handler{
 		"GET /api/auth/status":           app.handleAuthStatus,
+		"GET /api/push/status":           app.requireAuth(app.handlePushStatus),
+		"POST /api/push/register":        app.requireAuth(app.handlePushRegister),
+		"POST /api/push/test":            app.requireAuth(app.handlePushTest),
 		"POST /api/time":                 app.requireAuth(handleClientTime),
 		"POST /api/maintenance/rollback": app.requireAuth(app.handleRollback),
 		"POST /api/auth/setup":           app.handleAuthSetup,

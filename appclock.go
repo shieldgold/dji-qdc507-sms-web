@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -13,6 +15,32 @@ type AppClock struct {
 	mu       sync.Mutex
 	anchor   time.Time
 	received time.Time
+	path     string
+}
+
+type savedAppClock struct {
+	UTC    time.Time `json:"utc"`
+	System time.Time `json:"system"`
+}
+
+// Retain a TLS-valid time estimate after a process/module restart. The push
+// sender refreshes this from Apple's TLS-authenticated Date header.
+func (c *AppClock) Load(dir string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.path = filepath.Join(dir, "clock.json")
+	var saved savedAppClock
+	b, e := os.ReadFile(c.path)
+	if e != nil || json.Unmarshal(b, &saved) != nil || saved.UTC.Year() < 2024 || saved.UTC.Year() > 2100 {
+		return
+	}
+	now := time.Now()
+	elapsed := now.Sub(saved.System)
+	if elapsed < 0 || elapsed > 30*24*time.Hour {
+		elapsed = 0
+	}
+	c.anchor = saved.UTC.Add(elapsed)
+	c.received = now
 }
 
 var applicationTime AppClock
@@ -32,6 +60,12 @@ func (c *AppClock) Sync(ms int64) error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.path != "" {
+		b, _ := json.Marshal(savedAppClock{UTC: t, System: time.Now()})
+		if err := atomicWrite(c.path, b); err != nil {
+			return errors.New("通知时间未能保存，请重试")
+		}
+	}
 	c.anchor = t
 	c.received = time.Now()
 	return nil

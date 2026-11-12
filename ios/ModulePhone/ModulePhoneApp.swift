@@ -2,9 +2,10 @@ import SwiftUI
 import ModuleCore
 
 @main struct ModulePhoneApp: App {
-    @StateObject private var phone = CallManager()
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
+    @StateObject private var phone = CallManager.shared
     @StateObject private var dashboard = DashboardModel()
-    @StateObject private var notifications = NotificationService()
+    @StateObject private var notifications = NotificationService.shared
     @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {
@@ -71,6 +72,7 @@ struct ContentView: View {
             guard phone.loggedIn, phase == .active else { return }
             await notifications.refreshPermission()
             while !Task.isCancelled {
+                await notifications.attach(api: phone.api, iccid: phone.savedConnection.iccid)
                 await dashboard.refresh(api: phone.api, notifications: notifications)
                 do { try await Task.sleep(for: .seconds(4)) } catch { return }
             }
@@ -78,7 +80,7 @@ struct ContentView: View {
         .onChange(of: phase) { _, value in
             if value == .active { Task { await notifications.refreshPermission() } }
         }
-        .onChange(of: phone.loggedIn) { _, loggedIn in if !loggedIn { dashboard.reset() } }
+        .onChange(of: phone.loggedIn) { _, loggedIn in if !loggedIn { dashboard.reset(); notifications.detach() } }
         .onChange(of: phone.hasCall) { _, active in
             showKeypad = false
             if active { sheet = nil; dashboard.inboxVisible = false }
@@ -96,7 +98,7 @@ struct ContentView: View {
                 Spacer()
                 Button { sheet = .notifications } label: {
                     Image(systemName: notifications.enabled && notifications.permitted ? "bell.badge" : "bell").frame(width: 44, height: 44)
-                }.accessibilityLabel("通知设置")
+                }.accessibilityLabel("通知设置").accessibilityIdentifier("通知设置")
                 Button { sheet = .connection } label: { Image(systemName: "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("连接设置")
             }
             connectionCard
@@ -116,7 +118,7 @@ struct ContentView: View {
             Button { sheet = .notifications } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "info.circle")
-                    Text("提醒需保持 App 前台 · 查看通知设置")
+                    Text(notifications.label + " · 通知设置")
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                 }.font(.caption).foregroundStyle(.secondary).frame(minHeight: 32)

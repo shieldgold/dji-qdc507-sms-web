@@ -1,6 +1,6 @@
 # dji-qdc507-sms-web
 
-> This branch adds standalone SMS management and an experimental native iOS calling app. See [deployment and rollback](IPHONE_DIRECT.md) and [iOS calling status and setup](IOS_CALLING.md). The user has confirmed stable outgoing iPhone calls with two-way audio, and significantly improved latency that no longer accumulates during continuous speech after the module fix.
+> This branch adds standalone SMS management and an experimental native iOS calling app. See [deployment and rollback](IPHONE_DIRECT.md) and [iOS calling status and setup](IOS_CALLING.md). The user has confirmed stable outgoing iPhone calls with two-way audio, and significantly improved latency that no longer accumulates during continuous speech after the module fix. Version 0.3.0 adds SMS and incoming-call push notifications sent directly from the module to Apple; see [configuration and acceptance status](BACKGROUND_NOTIFICATIONS.md).
 
 **Read and send SMS — including verification codes — on an iPad, iPhone, or any browser-only device, using a cheap DJI Cellular 4G module.**
 

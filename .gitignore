@@ -21,3 +21,12 @@ voice/build/
 ios/Core/.build/
 ios/**/xcuserdata/
 ios/DerivedData/
+
+# Private push credentials and local state
+*.p8
+push-relay.json
+push-apns.json
+clock.json
+push-state.json
+.dev.vars*
+.wrangler/

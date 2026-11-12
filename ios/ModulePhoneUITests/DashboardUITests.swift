@@ -33,8 +33,13 @@ final class DashboardUITests: XCTestCase {
             if allow.waitForExistence(timeout: 3) { allow.tap() }
             else if springboard.buttons["允许"].exists { springboard.buttons["允许"].tap() }
         }
-        let test = app.buttons["测试通知"]
-        for _ in 0..<3 { if test.isHittable { break }; app.swipeUp() }
+        let test = app.buttons["仅测试本机横幅"]
+        // A partly visible cell at the home-indicator edge may report hittable
+        // although its tap lands in the system gesture area. Scroll it clear.
+        for _ in 0..<3 {
+            if test.isHittable && test.frame.maxY < app.frame.maxY - 80 { break }
+            app.swipeUp()
+        }
         XCTAssertTrue(test.waitForExistence(timeout: 3))
         XCTAssertTrue(test.isEnabled)
         test.tap()

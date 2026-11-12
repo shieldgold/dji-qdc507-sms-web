@@ -45,6 +45,9 @@ func (a *App) freshSIMIdentity() (string, error) {
 	if a.ident.ICCID != id {
 		a.ident = SimIdentity{ICCID: id, Key: "iccid:" + id}
 	}
+	if a.push != nil {
+		a.push.bindCard(id)
+	}
 	a.identAt = time.Now()
 	return id, nil
 }
