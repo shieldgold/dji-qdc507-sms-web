@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -322,6 +323,13 @@ static int valid_buffer_length(unsigned int length)
 {
     /* Protect against an ABI mismatch before allocating or issuing I/O. */
     return length >= 160U && length <= 65536U && (length & 1U) == 0U;
+}
+
+static uint64_t monotonic_usec(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (uint64_t)now.tv_sec * 1000000U + (uint64_t)now.tv_nsec / 1000U;
 }
 
 static int enable_mixer_with_retry(struct bridge_context *context,
@@ -734,6 +742,7 @@ static void *downlink_thread(void *opaque)
     struct bridge_context *context = opaque;
     struct worker_resources resources;
     unsigned int buffer_length = 0;
+    uint64_t next_frame = 0;
     int cancel_error;
 
     memset(&resources, 0, sizeof(resources));
@@ -783,6 +792,7 @@ static void *downlink_thread(void *opaque)
         mark_worker_failed(context);
         goto done;
     }
+    if (context->stdio_mode) { buffer_length = 320U; }
     resources.buffer = calloc(1U, buffer_length);
     if (resources.buffer == NULL) {
         log_message("error", "could not allocate %u-byte downlink buffer",
@@ -802,6 +812,7 @@ static void *downlink_thread(void *opaque)
         goto done;
     }
     usleep(IDLE_RETRY_USEC);
+    next_frame = monotonic_usec();
 
     while (!should_stop()) {
         int write_result;
@@ -813,6 +824,16 @@ static void *downlink_thread(void *opaque)
                 mark_worker_failed(context);
             }
             break;
+        }
+
+        /* Some vendor PCM endpoints return idle silence immediately. Keep
+         * network output at 8 kHz rather than flooding the iPhone's queue.
+         * A blocking read already consumes this period, so do not double it. */
+        if (context->stdio_mode) {
+            uint64_t now = monotonic_usec();
+            next_frame += 20000U;
+            if (next_frame > now) { usleep((useconds_t)(next_frame - now)); }
+            else if (now - next_frame > 40000U) { next_frame = now; }
         }
 
         write_result =
