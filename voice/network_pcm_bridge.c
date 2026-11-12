@@ -646,25 +646,21 @@ static void *uplink_thread(void *opaque)
                  (size_t)buffer_length - resources.carried_bytes);
 
         if (received > 0) {
-            size_t total_bytes = resources.carried_bytes + (size_t)received;
-            size_t pcm_bytes = total_bytes & ~(size_t)1U;
-            unsigned char trailing_byte = 0U;
-
-            if (pcm_bytes != total_bytes) {
-                trailing_byte = resources.buffer[pcm_bytes];
+            resources.carried_bytes += (size_t)received;
+            /* AFE copy submits exactly one native period per call, regardless
+             * of the user's count. Partial writes make the ALSA application
+             * pointer diverge from the DSP period index and replay old data. */
+            if (resources.carried_bytes < (size_t)buffer_length) {
+                continue;
             }
-            if (pcm_bytes > 0U &&
-                context->api.pcm_write(resources.pcm, resources.buffer,
-                                       (unsigned int)pcm_bytes) != 0) {
+            if (context->api.pcm_write(resources.pcm, resources.buffer,
+                                       buffer_length) != 0) {
                 log_message("error", "uplink PCM write failed (%lu bytes)",
-                            (unsigned long)pcm_bytes);
+                            (unsigned long)buffer_length);
                 mark_worker_failed(context);
                 break;
             }
-            resources.carried_bytes = total_bytes - pcm_bytes;
-            if (resources.carried_bytes != 0U) {
-                resources.buffer[0] = trailing_byte;
-            }
+            resources.carried_bytes = 0U;
             continue;
         }
         if (received == 0 && context->stdio_mode) { break; }
@@ -743,6 +739,7 @@ static void *downlink_thread(void *opaque)
     struct worker_resources resources;
     unsigned int buffer_length = 0;
     uint64_t next_frame = 0;
+    uint64_t period_usec = 0;
     int cancel_error;
 
     memset(&resources, 0, sizeof(resources));
@@ -792,7 +789,10 @@ static void *downlink_thread(void *opaque)
         mark_worker_failed(context);
         goto done;
     }
-    if (context->stdio_mode) { buffer_length = 320U; }
+    /* Transport frames need not match the native AFE period (256 bytes on
+     * QDC507). Always read one native period and pace its actual sample count. */
+    period_usec = (uint64_t)buffer_length * 1000000U /
+                  (PCM_RATE * PCM_CHANNELS * sizeof(int16_t));
     resources.buffer = calloc(1U, buffer_length);
     if (resources.buffer == NULL) {
         log_message("error", "could not allocate %u-byte downlink buffer",
@@ -831,9 +831,9 @@ static void *downlink_thread(void *opaque)
          * A blocking read already consumes this period, so do not double it. */
         if (context->stdio_mode) {
             uint64_t now = monotonic_usec();
-            next_frame += 20000U;
+            next_frame += period_usec;
             if (next_frame > now) { usleep((useconds_t)(next_frame - now)); }
-            else if (now - next_frame > 40000U) { next_frame = now; }
+            else if (now - next_frame > 2U * period_usec) { next_frame = now; }
         }
 
         write_result =

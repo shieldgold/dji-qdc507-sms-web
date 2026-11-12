@@ -1,6 +1,6 @@
 # dji-qdc507-sms-web
 
-> 本分支提供模块独立运行的短信管理和实验性 iOS 通话 App。部署与回退见 [IPHONE_DIRECT.md](IPHONE_DIRECT.md)，通话实现与验收状态见 [IOS_CALLING.md](IOS_CALLING.md)。iPhone 直连后的双向声音仍待验收。
+> 本分支提供模块独立运行的短信管理和实验性 iOS 通话 App。部署与回退见 [IPHONE_DIRECT.md](IPHONE_DIRECT.md)，通话实现与验收状态见 [IOS_CALLING.md](IOS_CALLING.md)。iPhone 真实外呼稳定且双方有声已获用户确认；持续讲话延迟修复已部署，待复测。
 
 **用一块几十块钱的大疆 4G 模块，让 iPad、iPhone 或任何只能开浏览器的设备收发短信、拿到验证码。**
 
@@ -270,7 +270,7 @@ adb shell "kill \$(pidof smsweb); rm -rf /data/smsweb; sync"
 2. **上电后约 40 秒**网页才能访问（模块里的 Linux 要启动）。
 3. **明文 HTTP**（跑在模块私有 USB 链路上）。密码本身是 PBKDF2 存储，但传输未加密——考虑到只有插着模块的那台设备能访问，风险可控。需要的话可以加 HTTPS。
 4. **归档上限 300 条**，超出自动清理最旧的。
-5. **实验性语音**。本分支已增加 iOS 原生 App 与模块内音频运行时，并验证了短电话接通和挂断。iPhone 直连双向声音及后台来电尚未验收，详见 [IOS_CALLING.md](IOS_CALLING.md)。
+5. **实验性语音**。本分支已增加 iOS 原生 App 与模块内音频运行时，用户已确认真实外呼稳定且双方有声。持续讲话延迟修复待复测，后台来电唤醒尚未实现，详见 [IOS_CALLING.md](IOS_CALLING.md)。
 6. **改装不受官方支持**。打开 ADB 会改动一项 NV 设置并重启模块，可逆、社区普遍在做，但请自担风险。
 
 ---

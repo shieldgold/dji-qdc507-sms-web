@@ -1,6 +1,6 @@
 # dji-qdc507-sms-web
 
-> This branch adds standalone SMS management and an experimental native iOS calling app. See [deployment and rollback](IPHONE_DIRECT.md) and [iOS calling status and setup](IOS_CALLING.md). Direct iPhone two-way audio acceptance is still pending.
+> This branch adds standalone SMS management and an experimental native iOS calling app. See [deployment and rollback](IPHONE_DIRECT.md) and [iOS calling status and setup](IOS_CALLING.md). The user has confirmed stable outgoing iPhone calls with two-way audio. A module fix for increasing speech delay is deployed and awaiting a call retest.
 
 **Read and send SMS — including verification codes — on an iPad, iPhone, or any browser-only device, using a cheap DJI Cellular 4G module.**
 
@@ -290,7 +290,7 @@ exactly as it did before.
 2. **~40 s after power-up** before the web UI responds (the module's Linux has to boot).
 3. **Plain HTTP** on the module's private USB link. The password is stored with PBKDF2, but traffic is not encrypted in transit — acceptable given only the device the module is plugged into can reach it. HTTPS could be added.
 4. **Archive capped at 300 messages**; the oldest are pruned.
-5. **Experimental voice.** This branch adds a native iOS app and module-side audio runtime. Call control has been exercised; direct iPhone two-way audio and background incoming calls are not accepted. See [IOS_CALLING.md](IOS_CALLING.md).
+5. **Experimental voice.** This branch adds a native iOS app and module-side audio runtime. The user has confirmed stable outgoing calls with two-way audio. The speech-delay fix still needs a call retest; background incoming-call wakeup is not implemented. See [IOS_CALLING.md](IOS_CALLING.md).
 6. **Modifying the module is not officially supported.** Enabling ADB changes an NV setting and reboots the module. It is reversible and widely done by the community, but you do it at your own risk.
 
 ---
