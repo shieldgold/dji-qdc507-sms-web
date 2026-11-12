@@ -6,8 +6,31 @@ struct MessagesSheet: View {
     var body: some View {
         NavigationStack {
             ModuleWebView(api: api).navigationTitle("短信与模块").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } }
+                    ToolbarItem(placement: .bottomBar) { OpenSafariButton(api: api) }
+                }
         }
+    }
+}
+
+struct OpenSafariButton: View {
+    let api: ModuleAPI
+    @Environment(\.openURL) private var openURL
+    @State private var busy = false
+    @State private var error = ""
+    @State private var showError = false
+    var body: some View {
+        Button {
+            busy = true
+            Task { @MainActor in
+                defer { busy = false }
+                do { openURL(try await api.browserLoginURL()) }
+                catch { self.error = error.localizedDescription; showError = true }
+            }
+        } label: { Label(busy ? "正在打开…" : "免密打开 Safari", systemImage: "safari") }
+        .disabled(busy)
+        .alert("未能打开 Safari", isPresented: $showError) { Button("好", role: .cancel) {} } message: { Text(error) }
     }
 }
 

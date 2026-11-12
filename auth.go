@@ -59,12 +59,14 @@ type failInfo struct {
 }
 
 type AuthStore struct {
-	mu       sync.Mutex
-	loadErr  error
-	path     string
-	Accounts map[string]*Account `json:"accounts"`
-	Tokens   map[string]*Token   `json:"tokens"`
-	fails    map[string]*failInfo
+	mu             sync.Mutex
+	loadErr        error
+	path           string
+	Accounts       map[string]*Account `json:"accounts"`
+	Tokens         map[string]*Token   `json:"tokens"`
+	ActiveIdentity string              `json:"active_identity,omitempty"`
+	fails          map[string]*failInfo
+	browserTickets map[string]browserLoginTicket
 }
 
 func LoadAuth(dir string) *AuthStore {
@@ -94,14 +96,38 @@ func (a *AuthStore) saveLocked() error {
 		return errors.New("访问密码文件无法读取，已保留原文件，请从备份恢复")
 	}
 	b, err := json.Marshal(struct {
-		Accounts map[string]*Account `json:"accounts"`
-		Tokens   map[string]*Token   `json:"tokens"`
-	}{a.Accounts, a.Tokens})
+		Accounts       map[string]*Account `json:"accounts"`
+		Tokens         map[string]*Token   `json:"tokens"`
+		ActiveIdentity string              `json:"active_identity,omitempty"`
+	}{a.Accounts, a.Tokens, a.ActiveIdentity})
 	if err != nil {
 		return err
 	}
 	if err = atomicWrite(a.path, b); err != nil {
 		return errors.New("访问设置未能保存，请检查存储空间")
+	}
+	return nil
+}
+
+// Preserve each SIM's registered password, but discard every remembered session
+// once another card is observed. Persist the binding across module power cycles.
+func (a *AuthStore) bindIdentity(identity string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.ActiveIdentity == identity {
+		return nil
+	}
+	oldIdentity, oldTokens := a.ActiveIdentity, a.Tokens
+	if oldIdentity != "" {
+		a.Tokens = map[string]*Token{}
+	}
+	a.ActiveIdentity = identity
+	if err := a.saveLocked(); err != nil {
+		a.ActiveIdentity, a.Tokens = oldIdentity, oldTokens
+		return err
+	}
+	if oldIdentity != "" {
+		a.browserTickets = nil
 	}
 	return nil
 }

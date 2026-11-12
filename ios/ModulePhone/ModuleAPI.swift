@@ -52,6 +52,19 @@ final class ModuleAPI: NSObject, URLSessionTaskDelegate {
    await WKWebsiteDataStore.default().httpCookieStore.setCookie(cookie)
   }
  }
+ @MainActor func browserLoginURL() async throws -> URL {
+  await importWebSession()
+  let data = try await request("api/auth/browser/ticket", body: [:])
+  struct Ticket: Decodable { let ticket: String }
+  let ticket = try JSONDecoder().decode(Ticket.self, from: data).ticket
+  guard ticket.count == 64, ticket.allSatisfy({ "0123456789abcdef".contains($0) }),
+        var url = URLComponents(url: endpoint.url, resolvingAgainstBaseURL: false) else {
+   throw ModuleError.message("模块未返回有效免密链接，请重试")
+  }
+  url.fragment = "browser-login=" + ticket
+  guard let target = url.url else { throw ModuleError.message("无法打开模块网页") }
+  return target
+ }
  func login(password: String, iccid: String = "") async throws { _ = try await request("api/auth/login", body: ["password": password, "remember": true, "expected_iccid": iccid]) }
  func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }

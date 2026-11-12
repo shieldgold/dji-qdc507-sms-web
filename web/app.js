@@ -24,12 +24,20 @@ async function api(path,body,timeout=20000){
  }catch(e){if(!e.status)connection(false);throw e;}finally{clearTimeout(timer);}
 }
 function showGate(name){['boot-screen','setup','login','pin','chpw','main'].forEach(id=>$(id).hidden=id!==name);}
-function simLabel(id,sim){text(id,sim.number||('SIM 尾号 '+String(sim.iccid||'').slice(-4)));}
+function simLabel(id,sim){text(id,sim.iccid?'模块 SIM · 卡尾号 '+String(sim.iccid).slice(-4):'模块 SIM · 尚未识别卡号');}
+let browserHandoffError='';
+async function receiveBrowserLogin(){
+ if(!location.hash.startsWith('#browser-login='))return;
+ const ticket=location.hash.slice('#browser-login='.length);
+ // A fragment is not sent to the server; remove it before any other request.
+ history.replaceState(history.state,'',location.pathname+location.search);
+ try{await api('/api/auth/browser/redeem',{ticket});}catch(e){browserHandoffError=e.status?e.message:'免密登录未完成，请返回 App 重新打开 Safari。';}
+}
 async function boot(){
  try{
   const st=await api('/api/auth/status');S.sim=st;loadLocal(st);simLabel('sim-setup',st);simLabel('sim-login',st);
   if(!st.registered){showGate('setup');return;}
-  if(!st.authenticated){showGate('login');return;}
+  if(!st.authenticated){showGate('login');error('err-login',browserHandoffError);return;}
   try{await api('/api/time',{unix_ms:Date.now()});}catch(_){}
   if(st.sim&&st.sim.state!=='READY'){showPIN(st.sim);return;}
   showGate('main');showPage(S.page==='thread'?'messages':S.page);await refreshMessages();
@@ -56,7 +64,7 @@ $('setup-form').addEventListener('submit',async e=>{
 });
 $('login-form').addEventListener('submit',async e=>{
  e.preventDefault();error('err-login','');$('btn-login').disabled=true;
- try{await api('/api/auth/login',{password:$('pw').value,remember:$('rm-login').checked});$('pw').value='';await boot();}catch(err){error('err-login',err.message);}finally{$('btn-login').disabled=false;}
+ try{await api('/api/auth/login',{password:$('pw').value,remember:$('rm-login').checked,expected_iccid:S.sim.iccid||''});$('pw').value='';browserHandoffError='';await boot();}catch(err){error('err-login',err.message);}finally{$('btn-login').disabled=false;}
 });
 $('pin-form').addEventListener('submit',async e=>{
  e.preventDefault();if(pinSending||$('btn-pin-unlock').disabled)return;
@@ -232,5 +240,5 @@ function resizeViewport(){const v=window.visualViewport,root=document.documentEl
 if(window.visualViewport){window.visualViewport.addEventListener('resize',resizeViewport);window.visualViewport.addEventListener('scroll',resizeViewport);}window.addEventListener('resize',resizeViewport);window.addEventListener('pagehide',saveDraft);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshMessages();checkPending();if(S.page==='network')refreshOverview();}});
 pollTimer=setInterval(()=>{if(!document.hidden){refreshMessages();checkPending();}},4000);overviewTimer=setInterval(()=>{if(!document.hidden&&!$('main').hidden&&(S.page==='network'||S.page==='device'))refreshOverview();},5000);
-resizeViewport();boot();
+resizeViewport();receiveBrowserLogin().then(boot);
 })();

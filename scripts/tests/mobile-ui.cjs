@@ -1,8 +1,8 @@
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const {JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'../..'),html=fs.readFileSync(path.join(root,'web/index.html'),'utf8');
 const tick=async()=>{for(let i=0;i<4;i++)await new Promise(r=>setImmediate(r));};
-function page(overrides={},saved){
- const dom=new JSDOM(html,{url:'http://module.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
+function page(overrides={},saved,hash=''){
+ const dom=new JSDOM(html,{url:'http://module.test/'+hash,runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
  const calls=[],intervals=[];w.setInterval=f=>{intervals.push(f);return intervals.length;};
  const defaults={
   '/api/auth/status':{registered:true,authenticated:true,iccid:'test-card',sim:{state:'READY',blocked:false}},
@@ -63,4 +63,26 @@ test('PIN uncertainty clears secret and keeps submit disabled',async t=>{
 test('message bodies stay text instead of becoming executable HTML',async t=>{
  const attack='<img src=x onerror="window.injected=true">';const p=page({'/api/state':{sim:{state:'READY'},messages:[{key:"x');evil",sender:'10010',body:attack,direction:'in',time:'2026-11-12T12:00:00Z'}]}});t.after(p.close);await tick();
  p.w.document.querySelector('[data-number]').click();assert.equal(p.el('conversation').querySelectorAll('img').length,0);assert.match(p.el('conversation').textContent,/<img/);
+});
+test('login identifies the external SIM without presenting its unverified phone record as truth',async t=>{
+ const p=page({'/api/auth/status':{registered:true,authenticated:false,iccid:'8900000000000001234',number:'+8613800000000',sim:{state:'READY'}}});t.after(p.close);await tick();
+ assert.equal(p.el('sim-login').textContent,'模块 SIM · 卡尾号 1234');
+ assert.doesNotMatch(p.el('login').textContent,/13800000000/);
+ p.input('pw','synthetic-password');p.submit('login-form');await tick();
+ assert.equal(p.calls.find(c=>c.url==='/api/auth/login').body.expected_iccid,'8900000000000001234');
+});
+test('Safari handoff is redeemed once then removed from the address before any request',async t=>{
+ const ticket='a'.repeat(64);let loggedIn=false;const p=page({
+  '/api/auth/browser/redeem':async()=>{await Promise.resolve();assert.equal(p.w.location.hash,'');loggedIn=true;return {ok:true};},
+  '/api/auth/status':()=>({registered:true,authenticated:loggedIn,iccid:'test-card',sim:{state:'READY'}})
+ },null,'#browser-login='+ticket);t.after(p.close);await tick();
+ assert.equal(p.calls[0].url,'/api/auth/browser/redeem');assert.equal(p.calls[0].body.ticket,ticket);
+ assert.equal(p.el('main').hidden,false);p.click('reconnect');await tick();
+ assert.equal(p.calls.filter(c=>c.url==='/api/auth/browser/redeem').length,1);
+ assert.doesNotMatch(p.w.localStorage.getItem('module-v2:test-card')||'',new RegExp(ticket));
+});
+test('an expired Safari handoff shows a useful error and never retries automatically',async t=>{
+ const p=page({'/api/auth/browser/redeem':{status:401,data:{error:'免密链接已过期，请返回 App 重新打开'}},'/api/auth/status':{registered:true,authenticated:false,iccid:'test-card',sim:{state:'READY'}}},null,'#browser-login='+'b'.repeat(64));t.after(p.close);await tick();
+ assert.equal(p.w.location.hash,'');assert.equal(p.el('login').hidden,false);assert.match(p.el('err-login').textContent,/过期/);
+ p.click('reconnect');await tick();assert.equal(p.calls.filter(c=>c.url==='/api/auth/browser/redeem').length,1);
 });

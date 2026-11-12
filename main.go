@@ -243,6 +243,11 @@ func (a *App) requireAuth(h Handler) Handler {
 }
 
 func (a *App) handleAuthStatus(w *Resp, r *Req) error {
+	a.opMu.Lock()
+	defer a.opMu.Unlock()
+	if _, err := a.freshSIMIdentity(); err != nil {
+		return writeJSON(w, 503, map[string]string{"error": err.Error()})
+	}
 	si := a.identity()
 	tok := cookieValue(r.Header["cookie"], tokenName)
 	return writeJSON(w, 200, map[string]any{
@@ -533,6 +538,8 @@ func main() {
 		"POST /api/maintenance/rollback": app.requireAuth(app.handleRollback),
 		"POST /api/auth/setup":           app.handleAuthSetup,
 		"POST /api/auth/login":           app.handleAuthLogin,
+		"POST /api/auth/browser/ticket":  app.requireAuth(app.handleBrowserLoginTicket),
+		"POST /api/auth/browser/redeem":  app.handleBrowserLoginRedeem,
 		"POST /api/auth/logout":          app.handleAuthLogout,
 		"POST /api/auth/change":          app.requireAuth(app.handleAuthChange),
 		"GET /api/overview":              app.requireAuth(app.handleOverview),

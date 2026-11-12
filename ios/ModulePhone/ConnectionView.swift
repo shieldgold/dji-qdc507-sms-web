@@ -25,6 +25,7 @@ struct ConnectionView: View {
                     } label: {
                         HStack { Text(phone.busy ? "连接中…" : "连接模块"); Spacer(); if phone.busy { ProgressView() } }
                     }.disabled(phone.busy)
+                    if phone.loggedIn { OpenSafariButton(api: phone.api) }
                 } header: { Text("连接") } footer: { Text("凭据只保存在这台 iPhone 的系统钥匙串。同卡自动登录，检测到换卡就清除旧凭据，要求重新输入。") }
                 Section {
                     if !saved.simState.isEmpty { LabeledContent("卡片状态", value: saved.simState) }

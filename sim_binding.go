@@ -37,6 +37,11 @@ func (a *App) freshSIMIdentity() (string, error) {
 		a.identAt = time.Time{}
 		return "", err
 	}
+	if a.auth != nil {
+		if err := a.auth.bindIdentity("iccid:" + id); err != nil {
+			return "", err
+		}
+	}
 	if a.ident.ICCID != id {
 		a.ident = SimIdentity{ICCID: id, Key: "iccid:" + id}
 	}
