@@ -16,6 +16,7 @@ import ModuleCore
  @Published var speaker = false
  @Published var localPending = false
  private(set) var api = ModuleAPI(endpoint: try! ModuleEndpoint("http://192.168.225.1:8787"))
+ let savedConnection = SavedConnection()
  private let controller = CXCallController()
  private var provider: CXProvider!
  private let audio = AudioBridge()
@@ -41,7 +42,7 @@ import ModuleCore
   provider = CXProvider(configuration: config); provider.setDelegate(self, queue: .main)
 
  }
- func connect(password: String) async {
+ func connect(password: String, remember: Bool = true) async {
   guard !busy else { return }
   busy = true; error = ""; defer { busy = false }
   do {
@@ -49,7 +50,24 @@ import ModuleCore
    let endpoint = try ModuleEndpoint(address)
    endpointGeneration = UUID(); polling?.cancel(); polling = nil; loggedIn = false; connected = false; status = nil
    api = ModuleAPI(endpoint: endpoint)
-   if !password.isEmpty { try await api.login(password: password) } else { await api.importWebSession() }
+   try await savedConnection.inspect(api: api)
+   if !password.isEmpty {
+    try await api.login(password: password, iccid: savedConnection.iccid)
+    try savedConnection.rememberPassword(password, enabled: remember)
+   } else {
+    guard !savedConnection.requiresManualLogin else { throw ModuleError.message("检测到换卡，请输入当前卡的访问密码") }
+    await api.importWebSession()
+    do { _ = try await api.state() }
+    catch let failure as ModuleHTTPError where failure.status == 401 {
+     guard let saved = savedConnection.passwordForLogin else { throw ModuleError.message("请输入当前 SIM 卡的模块访问密码") }
+     do { try await api.login(password: saved, iccid: savedConnection.iccid) }
+     catch let loginFailure as ModuleHTTPError {
+      if loginFailure.status == 401 { savedConnection.rejectSavedPassword() }
+      throw loginFailure
+     }
+    }
+   }
+   try await savedConnection.attemptSavedPIN(api: api)
    await api.shareSessionWithWebView()
    let data = try await api.state(); status = data; loggedIn = true; connected = true
    _ = try? await api.request("api/time", body: ["unix_ms": Int64(Date().timeIntervalSince1970 * 1000)])
@@ -63,7 +81,7 @@ import ModuleCore
   }
  }
  func setForeground(_ foreground: Bool) {
-  if foreground { startPolling() }
+  if foreground { if !busy && !hasCall { Task { await connect(password: "") } } else { startPolling() } }
   else if !hasCall { polling?.cancel(); polling = nil }
  }
  func refresh() async {

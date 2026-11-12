@@ -10,10 +10,19 @@
 		119E1EEC7EEB48435575FF7C /* ModuleAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */; };
 		3E6CA6948651433529D93625 /* AudioBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53DDC23651B6932206AEAD15 /* AudioBridgeTests.swift */; };
 		45531CEAA01CBA0F0E00CD0C /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C59756AE0A24FB36D3F911F /* CallManager.swift */; };
+		5C630604D9D1ED0749758B6C /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6D14E25A924103AC056BCB2 /* ConnectionView.swift */; };
 		639B5C6B0A547C998AEC9A74 /* ModulePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */; };
+		84F84529D4E5400838B7EDEE /* SecondaryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149B874FE2C8A063ED9F68B1 /* SecondaryViews.swift */; };
+		88B1C799F62AE9A5792312B6 /* DashboardUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 604D7B9055543758A4D9BC66 /* DashboardUITests.swift */; };
 		96EEF2C6FC642D696E5BCB9D /* CallManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D97C86270D1AA55A58CA5FA /* CallManagerTests.swift */; };
+		9D0562F21266D668D65C23C5 /* SavedConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E307C13808715974F46557E /* SavedConnection.swift */; };
 		A9649AB9478605C889A95E22 /* AudioBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */; };
+		ACF661833DAA5C37C5FEB434 /* DashboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7354E02D5075AACED7992F35 /* DashboardModel.swift */; };
+		CECA63ABFB517D856BABCF1B /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBF4F53BCDFE8610B0AAE4B /* NotificationService.swift */; };
+		D3FD0407E141C9227F660359 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6844164927DAF96B8C4BE693 /* Assets.xcassets */; };
 		EBD275C5BFF9292174532F37 /* ModuleCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3216E5BA56D77035B9FA02F5 /* ModuleCore */; };
+		FBF1F1151BC306D6C6DF086A /* SavedConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A8380D2DFD2463228DE8E3C /* SavedConnectionTests.swift */; };
+		FF2CE6970D8FB72998BA171C /* DashboardModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F1B5D285B6ED5A73423BBA1 /* DashboardModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,18 +33,35 @@
 			remoteGlobalIDString = F892C67B4488B7861B0DE6CD;
 			remoteInfo = ModulePhone;
 		};
+		ED4BFFF531D55686B05655A7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 247B144FC0AB5E805AD93526 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F892C67B4488B7861B0DE6CD;
+			remoteInfo = ModulePhone;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		09660B5B4528F0300B9D145D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		149B874FE2C8A063ED9F68B1 /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
+		1A8380D2DFD2463228DE8E3C /* SavedConnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedConnectionTests.swift; sourceTree = "<group>"; };
+		245BF1AF7FA14E5E6893611B /* ModulePhoneUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ModulePhoneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModulePhoneApp.swift; sourceTree = "<group>"; };
 		4C59756AE0A24FB36D3F911F /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
 		53DDC23651B6932206AEAD15 /* AudioBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBridgeTests.swift; sourceTree = "<group>"; };
 		5D97C86270D1AA55A58CA5FA /* CallManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManagerTests.swift; sourceTree = "<group>"; };
+		5E307C13808715974F46557E /* SavedConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedConnection.swift; sourceTree = "<group>"; };
+		5F1B5D285B6ED5A73423BBA1 /* DashboardModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardModelTests.swift; sourceTree = "<group>"; };
+		604D7B9055543758A4D9BC66 /* DashboardUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardUITests.swift; sourceTree = "<group>"; };
+		6844164927DAF96B8C4BE693 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		6FBF4F53BCDFE8610B0AAE4B /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		7354E02D5075AACED7992F35 /* DashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardModel.swift; sourceTree = "<group>"; };
 		98990DBADD5F36F3B2F53EA7 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBridge.swift; sourceTree = "<group>"; };
 		BFA733596969EE46C8C71EEF /* ModulePhoneTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ModulePhoneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF814785736BA843E765152E /* ModulePhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ModulePhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6D14E25A924103AC056BCB2 /* ConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView.swift; sourceTree = "<group>"; };
 		F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModuleAPI.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -56,6 +82,8 @@
 			children = (
 				53DDC23651B6932206AEAD15 /* AudioBridgeTests.swift */,
 				5D97C86270D1AA55A58CA5FA /* CallManagerTests.swift */,
+				5F1B5D285B6ED5A73423BBA1 /* DashboardModelTests.swift */,
+				1A8380D2DFD2463228DE8E3C /* SavedConnectionTests.swift */,
 			);
 			path = ModulePhoneTests;
 			sourceTree = "<group>";
@@ -65,6 +93,7 @@
 			children = (
 				F03023A9020CC75B805AFDE6 /* ModulePhone */,
 				2A4700E0A4A58BF2784E86EF /* ModulePhoneTests */,
+				E1136B04CD95734E7A8D41DF /* ModulePhoneUITests */,
 				FE0018903AC8C9F26D8AD318 /* Packages */,
 				372455466A3BCF5586392128 /* Products */,
 			);
@@ -75,18 +104,33 @@
 			children = (
 				DF814785736BA843E765152E /* ModulePhone.app */,
 				BFA733596969EE46C8C71EEF /* ModulePhoneTests.xctest */,
+				245BF1AF7FA14E5E6893611B /* ModulePhoneUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E1136B04CD95734E7A8D41DF /* ModulePhoneUITests */ = {
+			isa = PBXGroup;
+			children = (
+				604D7B9055543758A4D9BC66 /* DashboardUITests.swift */,
+			);
+			path = ModulePhoneUITests;
 			sourceTree = "<group>";
 		};
 		F03023A9020CC75B805AFDE6 /* ModulePhone */ = {
 			isa = PBXGroup;
 			children = (
+				6844164927DAF96B8C4BE693 /* Assets.xcassets */,
 				A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */,
 				4C59756AE0A24FB36D3F911F /* CallManager.swift */,
+				E6D14E25A924103AC056BCB2 /* ConnectionView.swift */,
+				7354E02D5075AACED7992F35 /* DashboardModel.swift */,
 				09660B5B4528F0300B9D145D /* Info.plist */,
 				F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */,
 				4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */,
+				6FBF4F53BCDFE8610B0AAE4B /* NotificationService.swift */,
+				5E307C13808715974F46557E /* SavedConnection.swift */,
+				149B874FE2C8A063ED9F68B1 /* SecondaryViews.swift */,
 			);
 			path = ModulePhone;
 			sourceTree = "<group>";
@@ -102,6 +146,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		39A139A83320A173C7FC9154 /* ModulePhoneUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 153936CB15A0989E6846DE7E /* Build configuration list for PBXNativeTarget "ModulePhoneUITests" */;
+			buildPhases = (
+				7F08BE2BDA06CBFD49A5E641 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DB0ED4A5B2ED97438DDFB6A4 /* PBXTargetDependency */,
+			);
+			name = ModulePhoneUITests;
+			packageProductDependencies = (
+			);
+			productName = ModulePhoneUITests;
+			productReference = 245BF1AF7FA14E5E6893611B /* ModulePhoneUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		5BB918F885E66F336707426C /* ModulePhoneTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0B347005087CFA0FC1AA655A /* Build configuration list for PBXNativeTarget "ModulePhoneTests" */;
@@ -125,6 +187,7 @@
 			buildConfigurationList = E636F2E03CE70ED264FB373D /* Build configuration list for PBXNativeTarget "ModulePhone" */;
 			buildPhases = (
 				8AC67418413894717BCAC666 /* Sources */,
+				0A7699AC2D03660FAFDE39D6 /* Resources */,
 				8C3D25BE59E5836CCF1EA014 /* Frameworks */,
 			);
 			buildRules = (
@@ -148,6 +211,11 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					39A139A83320A173C7FC9154 = {
+						DevelopmentTeam = JM394W6UR5;
+						ProvisioningStyle = Automatic;
+						TestTargetID = F892C67B4488B7861B0DE6CD;
+					};
 					5BB918F885E66F336707426C = {
 						DevelopmentTeam = JM394W6UR5;
 						ProvisioningStyle = Automatic;
@@ -177,19 +245,44 @@
 			targets = (
 				F892C67B4488B7861B0DE6CD /* ModulePhone */,
 				5BB918F885E66F336707426C /* ModulePhoneTests */,
+				39A139A83320A173C7FC9154 /* ModulePhoneUITests */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		0A7699AC2D03660FAFDE39D6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3FD0407E141C9227F660359 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		7F08BE2BDA06CBFD49A5E641 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				88B1C799F62AE9A5792312B6 /* DashboardUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8AC67418413894717BCAC666 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A9649AB9478605C889A95E22 /* AudioBridge.swift in Sources */,
 				45531CEAA01CBA0F0E00CD0C /* CallManager.swift in Sources */,
+				5C630604D9D1ED0749758B6C /* ConnectionView.swift in Sources */,
+				ACF661833DAA5C37C5FEB434 /* DashboardModel.swift in Sources */,
 				119E1EEC7EEB48435575FF7C /* ModuleAPI.swift in Sources */,
 				639B5C6B0A547C998AEC9A74 /* ModulePhoneApp.swift in Sources */,
+				CECA63ABFB517D856BABCF1B /* NotificationService.swift in Sources */,
+				9D0562F21266D668D65C23C5 /* SavedConnection.swift in Sources */,
+				84F84529D4E5400838B7EDEE /* SecondaryViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -199,6 +292,8 @@
 			files = (
 				3E6CA6948651433529D93625 /* AudioBridgeTests.swift in Sources */,
 				96EEF2C6FC642D696E5BCB9D /* CallManagerTests.swift in Sources */,
+				FF2CE6970D8FB72998BA171C /* DashboardModelTests.swift in Sources */,
+				FBF1F1151BC306D6C6DF086A /* SavedConnectionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,9 +305,31 @@
 			target = F892C67B4488B7861B0DE6CD /* ModulePhone */;
 			targetProxy = 7ADDBFCF6676BCD1421C7241 /* PBXContainerItemProxy */;
 		};
+		DB0ED4A5B2ED97438DDFB6A4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F892C67B4488B7861B0DE6CD /* ModulePhone */;
+			targetProxy = ED4BFFF531D55686B05655A7 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		3211BE7FF87ADAE4A19262BD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shield.modulephone.ModulePhoneUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ModulePhone;
+			};
+			name = Release;
+		};
 		49626A55561A77F0216F0C5B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -304,7 +421,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = JM394W6UR5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -324,7 +441,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -333,6 +450,23 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BEB1E24D399B55AF7311E703 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shield.modulephone.ModulePhoneUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ModulePhone;
 			};
 			name = Debug;
 		};
@@ -393,7 +527,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = JM394W6UR5;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -407,7 +541,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -426,6 +560,15 @@
 			buildConfigurations = (
 				66FB3587D208C16C80BB243F /* Debug */,
 				49626A55561A77F0216F0C5B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		153936CB15A0989E6846DE7E /* Build configuration list for PBXNativeTarget "ModulePhoneUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEB1E24D399B55AF7311E703 /* Debug */,
+				3211BE7FF87ADAE4A19262BD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -24,14 +24,25 @@ func (a *App) handlePINStatus(w *Resp, r *Req) error {
 
 func (a *App) handlePINUnlock(w *Resp, r *Req) error {
 	var req struct {
-		PIN       string `json:"pin"`
-		RequestID string `json:"request_id"`
+		PIN           string `json:"pin"`
+		ExpectedICCID string `json:"expected_iccid"`
+		RequestID     string `json:"request_id"`
 	}
 	if json.Unmarshal(r.Body, &req) != nil {
 		return writeJSON(w, 400, map[string]string{"error": "请求格式错误"})
 	}
 	a.opMu.Lock()
 	defer a.opMu.Unlock()
+	if req.ExpectedICCID != "" {
+		current, err := a.freshSIMIdentity()
+		if err != nil || current != req.ExpectedICCID {
+			return writeJSON(w, 409, map[string]string{"error": "SIM 卡已变化或无法确认，未提交 PIN"})
+		}
+		// The outer authentication check may have used a cached SIM identity.
+		if !a.auth.Check(cookieValue(r.Header["cookie"], tokenName), "iccid:"+current) {
+			return writeJSON(w, 401, map[string]string{"error": "请先登录当前 SIM 卡"})
+		}
+	}
 	status, err := a.pin.Unlock(req.PIN, req.RequestID)
 	if err != nil {
 		return writeJSON(w, 400, map[string]any{"error": err.Error(), "sim": status})

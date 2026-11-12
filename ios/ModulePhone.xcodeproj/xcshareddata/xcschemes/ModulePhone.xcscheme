@@ -50,6 +50,17 @@
                ReferencedContainer = "container:ModulePhone.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "39A139A83320A173C7FC9154"
+               BuildableName = "ModulePhoneUITests.xctest"
+               BlueprintName = "ModulePhoneUITests"
+               ReferencedContainer = "container:ModulePhone.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

@@ -2,6 +2,12 @@ import Foundation
 import ModuleCore
 import WebKit
 
+struct ModuleHTTPError: LocalizedError {
+ let status: Int
+ let message: String
+ var errorDescription: String? { message }
+}
+
 final class ModuleAPI: NSObject, URLSessionTaskDelegate {
  let endpoint: ModuleEndpoint
  lazy var session: URLSession = {
@@ -20,12 +26,16 @@ final class ModuleAPI: NSObject, URLSessionTaskDelegate {
    r.httpMethod = "POST"; r.setValue("application/json", forHTTPHeaderField: "Content-Type")
    r.httpBody = try JSONSerialization.data(withJSONObject: body)
   }
-  let (data, response) = try await session.data(for: r)
+  let data: Data
+  let response: URLResponse
+  do { (data, response) = try await session.data(for: r) }
+  catch let failure as URLError where failure.code != .cancelled {
+   throw ModuleError.message("暂时连接不到模块，请检查 USB 连接并等待模块启动后重试")
+  }
   guard let response = response as? HTTPURLResponse else { throw ModuleError.message("模块未返回有效响应") }
   guard (200..<300).contains(response.statusCode) else {
    let value = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-   if response.statusCode == 401 { throw ModuleError.message("请先输入模块访问密码登录") }
-   throw ModuleError.message(value?["error"] as? String ?? "模块请求失败（\(response.statusCode)）")
+   throw ModuleHTTPError(status: response.statusCode, message: value?["error"] as? String ?? "模块请求失败（\(response.statusCode)）")
   }
   return data
  }
@@ -42,6 +52,6 @@ final class ModuleAPI: NSObject, URLSessionTaskDelegate {
    await WKWebsiteDataStore.default().httpCookieStore.setCookie(cookie)
   }
  }
- func login(password: String) async throws { _ = try await request("api/auth/login", body: ["password": password, "remember": true]) }
+ func login(password: String, iccid: String = "") async throws { _ = try await request("api/auth/login", body: ["password": password, "remember": true, "expected_iccid": iccid]) }
  func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }

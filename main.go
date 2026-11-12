@@ -287,11 +287,20 @@ func (a *App) handleAuthSetup(w *Resp, r *Req) error {
 
 func (a *App) handleAuthLogin(w *Resp, r *Req) error {
 	var req struct {
-		Password string `json:"password"`
-		Remember bool   `json:"remember"`
+		ExpectedICCID string `json:"expected_iccid"`
+		Password      string `json:"password"`
+		Remember      bool   `json:"remember"`
 	}
 	if err := json.Unmarshal(r.Body, &req); err != nil {
 		return writeJSON(w, 400, map[string]string{"error": "请求格式错误"})
+	}
+	if req.ExpectedICCID != "" {
+		a.opMu.Lock()
+		defer a.opMu.Unlock()
+		current, err := a.freshSIMIdentity()
+		if err != nil || current != req.ExpectedICCID {
+			return writeJSON(w, 409, map[string]string{"error": "SIM 卡已变化或无法确认，请重新输入该卡的访问密码"})
+		}
 	}
 	si := a.identity()
 	tok, err := a.auth.Login(si.Key, req.Password, req.Remember)
@@ -535,6 +544,7 @@ func main() {
 		"POST /api/send":                 app.requireAuth(app.handleSend),
 		"POST /api/delete":               app.requireAuth(app.handleDelete),
 		"GET /api/sim":                   app.requireAuth(app.handlePINStatus),
+		"GET /api/sim/binding":           app.handleSIMBinding,
 		"GET /api/calls":                 app.requireAuth(app.handleCalls),
 		"POST /api/calls/dial":           app.requireAuth(app.handleCallDial),
 		"POST /api/calls/answer":         app.requireAuth(app.handleCallAnswer),
