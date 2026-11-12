@@ -8,18 +8,33 @@
 
 /* Begin PBXBuildFile section */
 		119E1EEC7EEB48435575FF7C /* ModuleAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */; };
+		3E6CA6948651433529D93625 /* AudioBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53DDC23651B6932206AEAD15 /* AudioBridgeTests.swift */; };
 		45531CEAA01CBA0F0E00CD0C /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C59756AE0A24FB36D3F911F /* CallManager.swift */; };
 		639B5C6B0A547C998AEC9A74 /* ModulePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */; };
+		96EEF2C6FC642D696E5BCB9D /* CallManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D97C86270D1AA55A58CA5FA /* CallManagerTests.swift */; };
 		A9649AB9478605C889A95E22 /* AudioBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */; };
 		EBD275C5BFF9292174532F37 /* ModuleCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3216E5BA56D77035B9FA02F5 /* ModuleCore */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7ADDBFCF6676BCD1421C7241 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 247B144FC0AB5E805AD93526 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F892C67B4488B7861B0DE6CD;
+			remoteInfo = ModulePhone;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		09660B5B4528F0300B9D145D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4979B3D5C25932376839BAFB /* ModulePhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModulePhoneApp.swift; sourceTree = "<group>"; };
 		4C59756AE0A24FB36D3F911F /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
+		53DDC23651B6932206AEAD15 /* AudioBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBridgeTests.swift; sourceTree = "<group>"; };
+		5D97C86270D1AA55A58CA5FA /* CallManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManagerTests.swift; sourceTree = "<group>"; };
 		98990DBADD5F36F3B2F53EA7 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		A39E687EC04B9E74FA7ECF2F /* AudioBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBridge.swift; sourceTree = "<group>"; };
+		BFA733596969EE46C8C71EEF /* ModulePhoneTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ModulePhoneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF814785736BA843E765152E /* ModulePhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ModulePhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F74E5B57AFD3BF6118035E22 /* ModuleAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModuleAPI.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -36,10 +51,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2A4700E0A4A58BF2784E86EF /* ModulePhoneTests */ = {
+			isa = PBXGroup;
+			children = (
+				53DDC23651B6932206AEAD15 /* AudioBridgeTests.swift */,
+				5D97C86270D1AA55A58CA5FA /* CallManagerTests.swift */,
+			);
+			path = ModulePhoneTests;
+			sourceTree = "<group>";
+		};
 		36CE981B9B6C126CFC78B38D = {
 			isa = PBXGroup;
 			children = (
 				F03023A9020CC75B805AFDE6 /* ModulePhone */,
+				2A4700E0A4A58BF2784E86EF /* ModulePhoneTests */,
 				FE0018903AC8C9F26D8AD318 /* Packages */,
 				372455466A3BCF5586392128 /* Products */,
 			);
@@ -49,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				DF814785736BA843E765152E /* ModulePhone.app */,
+				BFA733596969EE46C8C71EEF /* ModulePhoneTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,6 +102,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5BB918F885E66F336707426C /* ModulePhoneTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B347005087CFA0FC1AA655A /* Build configuration list for PBXNativeTarget "ModulePhoneTests" */;
+			buildPhases = (
+				D1F71A94ADCCE3E2AF6D394A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DA87348A918273D1B10CE67A /* PBXTargetDependency */,
+			);
+			name = ModulePhoneTests;
+			packageProductDependencies = (
+			);
+			productName = ModulePhoneTests;
+			productReference = BFA733596969EE46C8C71EEF /* ModulePhoneTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		F892C67B4488B7861B0DE6CD /* ModulePhone */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E636F2E03CE70ED264FB373D /* Build configuration list for PBXNativeTarget "ModulePhone" */;
@@ -104,6 +148,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					5BB918F885E66F336707426C = {
+						DevelopmentTeam = JM394W6UR5;
+						ProvisioningStyle = Automatic;
+					};
 					F892C67B4488B7861B0DE6CD = {
 						DevelopmentTeam = JM394W6UR5;
 						ProvisioningStyle = Automatic;
@@ -128,6 +176,7 @@
 			projectRoot = "";
 			targets = (
 				F892C67B4488B7861B0DE6CD /* ModulePhone */,
+				5BB918F885E66F336707426C /* ModulePhoneTests */,
 			);
 		};
 /* End PBXProject section */
@@ -144,9 +193,60 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1F71A94ADCCE3E2AF6D394A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E6CA6948651433529D93625 /* AudioBridgeTests.swift in Sources */,
+				96EEF2C6FC642D696E5BCB9D /* CallManagerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		DA87348A918273D1B10CE67A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F892C67B4488B7861B0DE6CD /* ModulePhone */;
+			targetProxy = 7ADDBFCF6676BCD1421C7241 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		49626A55561A77F0216F0C5B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shield.modulephone.ModulePhoneTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ModulePhone.app/ModulePhone";
+			};
+			name = Release;
+		};
+		66FB3587D208C16C80BB243F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shield.modulephone.ModulePhoneTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ModulePhone.app/ModulePhone";
+			};
+			name = Debug;
+		};
 		6FC2DFB0C15E6516C9C7F2B0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -321,6 +421,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0B347005087CFA0FC1AA655A /* Build configuration list for PBXNativeTarget "ModulePhoneTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66FB3587D208C16C80BB243F /* Debug */,
+				49626A55561A77F0216F0C5B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		2658A8F54C240B08BF9E0E06 /* Build configuration list for PBXProject "ModulePhone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

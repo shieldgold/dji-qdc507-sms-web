@@ -97,7 +97,12 @@ import ModuleCore
    } else if let id = uuid, !next.telephone.pending, !localPending || Date().timeIntervalSince(outgoingAt) > 20 {
     provider.reportCall(with: id, endedAt: Date(), reason: .remoteEnded); clearCall()
    }
-  } catch { if generation == endpointGeneration { connected = false; self.error = error.localizedDescription } }
+  } catch {
+   // Leaving the foreground cancels polling. It is not a module failure and
+   // must not overwrite the preceding call/audio error with "request cancelled".
+   guard !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+   if generation == endpointGeneration { connected = false; self.error = error.localizedDescription }
+  }
  }
  func dial() async {
   error = ""

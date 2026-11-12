@@ -1,8 +1,10 @@
 import AVFoundation
 import Network
 import ModuleCore
+import os
 
 final class AudioBridge {
+ private let log = Logger(subsystem: "com.shield.modulephone", category: "audio")
  private let queue = DispatchQueue(label: "module.phone.audio")
  private var connection: NWConnection?
  private var engine: AVAudioEngine?
@@ -10,10 +12,11 @@ final class AudioBridge {
  private var player: AVAudioPlayerNode?
  private var inputFramer = PCMFramer()
  private var outputFramer = PCMFramer()
- private var sends = 0
+ private var queuedSendBytes = 0
  private var scheduled = 0
  private var generation = UUID()
  private var muted = false
+ private var capturedBuffers = 0
  var onError: ((String) -> Void)?
  var onConnected: (() -> Void)?
 
@@ -58,13 +61,16 @@ final class AudioBridge {
  }
  func stop() { queue.async { self.stopLocked() } }
  private func stopLocked() {
+  log.info("Stopping audio after \(self.capturedBuffers) microphone buffers")
   generation = UUID(); connection?.cancel(); connection = nil
   if let engine { if tapInstalled { engine.inputNode.removeTap(onBus: 0) }; engine.stop() }
   tapInstalled = false
-  engine = nil; player = nil; inputFramer = PCMFramer(); outputFramer = PCMFramer(); sends = 0; scheduled = 0
+  engine = nil; player = nil; inputFramer = PCMFramer(); outputFramer = PCMFramer(); queuedSendBytes = 0; scheduled = 0
+  capturedBuffers = 0
  }
  private func fail(_ message: String, id: UUID) {
   guard id == generation else { return }
+  log.error("Audio failure: \(message, privacy: .public)")
   stopLocked()
   DispatchQueue.main.async { self.onError?(message) }
  }
@@ -73,10 +79,16 @@ final class AudioBridge {
   self.engine = engine
   try engine.inputNode.setVoiceProcessingEnabled(true)
   let micFormat = engine.inputNode.outputFormat(forBus: 0)
+  log.info("Microphone format: \(micFormat.sampleRate) Hz, \(micFormat.channelCount) channels")
   guard micFormat.sampleRate > 0, micFormat.channelCount > 0,
         let wireFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 8000, channels: 1, interleaved: false),
         let converter = AVAudioConverter(from: micFormat, to: wireFormat) else { throw ModuleError.message("无法打开麦克风音频格式") }
   let player = AVAudioPlayerNode(); self.player = player
+  let outputFormat = engine.outputNode.inputFormat(forBus: 0)
+  log.info("Output format: \(outputFormat.sampleRate) Hz, \(outputFormat.channelCount) channels")
+  guard outputFormat.sampleRate > 0, outputFormat.channelCount > 0 else { throw ModuleError.message("无法打开听筒音频格式") }
+  // Keep the hardware graph at its native rate. The mixer converts wire PCM.
+  engine.connect(engine.mainMixerNode, to: engine.outputNode, format: outputFormat)
   engine.attach(player); engine.connect(player, to: engine.mainMixerNode, format: wireFormat)
   engine.inputNode.installTap(onBus: 0, bufferSize: 960, format: micFormat) { [weak self] buffer, _ in
    guard let self, let copy = AVAudioPCMBuffer(pcmFormat: micFormat, frameCapacity: buffer.frameLength) else { return }
@@ -86,6 +98,7 @@ final class AudioBridge {
    for i in 0..<min(source.count, dest.count) { if let s = source[i].mData, let d = dest[i].mData { memcpy(d, s, Int(source[i].mDataByteSize)) } }
    self.queue.async {
     guard self.generation == id else { return }
+    self.capturedBuffers += 1
     let capacity = AVAudioFrameCount(Double(copy.frameLength) * 8000 / micFormat.sampleRate + 32)
     guard let converted = AVAudioPCMBuffer(pcmFormat: wireFormat, frameCapacity: capacity) else { return }
     var supplied = false; var error: NSError?
@@ -93,6 +106,7 @@ final class AudioBridge {
      if supplied { state.pointee = .noDataNow; return nil }
      supplied = true; state.pointee = .haveData; return copy
     }
+    if self.capturedBuffers == 1 { self.log.info("First capture: \(copy.frameLength) frames, converted \(converted.frameLength), status \(status.rawValue)") }
     if status == .error { self.fail(error?.localizedDescription ?? "麦克风转换失败", id: id); return }
     guard let samples = converted.floatChannelData?[0] else { return }
     var data = Data(capacity: Int(converted.frameLength) * 2)
@@ -100,18 +114,22 @@ final class AudioBridge {
      let value = self.muted ? Int16(0) : Int16(max(-32768, min(32767, Int(samples[i] * 32767))))
      let bits = UInt16(bitPattern: value); data.append(UInt8(bits & 255)); data.append(UInt8(bits >> 8))
     }
-    for frame in self.inputFramer.append(data) {
-     guard self.sends < 4 else { continue }
-     self.sends += 1
-     self.connection?.send(content: frame, completion: .contentProcessed { error in
-      guard self.generation == id else { return }; self.sends -= 1
-      if let error { self.fail(error.localizedDescription, id: id) }
-     })
-    }
+    // iOS may deliver 100 ms despite the requested tap size. Submit the complete
+    // batch so callbacks on this queue do not drop its fifth 20 ms frame.
+    let batch = self.inputFramer.append(data).reduce(into: Data()) { $0.append($1) }
+    // Keep at most the newest 200 ms even if a route produces a larger tap.
+    let packet = Data(batch.suffix(3200))
+    guard !packet.isEmpty, self.queuedSendBytes + packet.count <= 3200 else { return }
+    self.queuedSendBytes += packet.count
+    self.connection?.send(content: packet, completion: .contentProcessed { error in
+     guard self.generation == id else { return }; self.queuedSendBytes -= packet.count
+     if let error { self.fail(error.localizedDescription, id: id) }
+    })
    }
   }
   tapInstalled = true
   engine.prepare(); try engine.start(); player.play()
+  log.info("Engine running: \(engine.isRunning), session \(AVAudioSession.sharedInstance().sampleRate) Hz")
  }
  private func receive(id: UUID) {
   connection?.receive(minimumIncompleteLength: 1, maximumLength: 2560) { [weak self] data, _, complete, error in

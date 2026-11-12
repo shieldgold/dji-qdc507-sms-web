@@ -43,3 +43,21 @@ targets:
         UIBackgroundModes: [audio, voip]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+  ModulePhoneTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [ModulePhoneTests]
+    dependencies:
+      - target: ModulePhone
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ModulePhone:
+    build:
+      targets:
+        ModulePhone: all
+    test:
+      targets: [ModulePhoneTests]
+      environmentVariables:
+        MODULE_AUDIO_HARDWARE_TEST: "1"
