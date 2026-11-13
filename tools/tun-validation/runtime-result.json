@@ -1,0 +1,95 @@
+{
+  "date": "2026-11-13",
+  "timezone": "Asia/Shanghai",
+  "overall_status": "stopped_after_transport_error_then_cleaned",
+  "candidate_sha256": "2b44764dc5bee73faab5671bc5575cb08cb08c8cb68854fb8ef1a85b5ca8637d",
+  "load_count": 1,
+  "unload_count": 1,
+  "force_used": false,
+  "reboot_or_power_cycle_performed": false,
+  "explicit_persistent_configuration_writes": false,
+  "business_service_metadata_may_change_on_restart": true,
+  "stages": {
+    "artifact_copy_and_hash": "passed",
+    "arm_cpu_selftest": "passed",
+    "logger_ready_gate": "passed",
+    "kernel_module_load": "passed",
+    "module_live_and_misc_registration": "passed",
+    "continuous_load_observation": "interrupted",
+    "open_features_close": "not_executed",
+    "private_tun_creation": "not_executed",
+    "bidirectional_packets": "not_executed",
+    "normal_unload": "passed",
+    "ram_cleanup": "passed",
+    "post_cleanup_30s_observation": "completed_no_new_kernel_error_memory_drift_recorded"
+  },
+  "mapped_module_reported_bytes": 14553,
+  "module_refcount_at_readback": 0,
+  "transport": {
+    "first_error": "IOKit kIOReturnAborted 0xe00002eb",
+    "initial_error_root_cause_confirmed": false,
+    "continuous_samples_before_abort_seconds": 15.144,
+    "stale_packet_handshake_bug_fixed_and_tested": true,
+    "recovered_kernel_log_contains_new_oops_or_warnings": false,
+    "without_tun_30s_canary": "passed",
+    "canary_does_not_exclude_driver_or_intermittent_usb_factors": true
+  },
+  "memory": {
+    "initial_three_kib": [
+      9944,
+      9932,
+      9932
+    ],
+    "quiet_three_kib": [
+      10052,
+      10024,
+      10024
+    ],
+    "after_authorized_smsweb_pause_kib": [
+      12816,
+      12824,
+      12824
+    ],
+    "minimum_retained_load_observation_kib": 12072,
+    "post_cleanup_samples_kib": [
+      9976,
+      9920,
+      9904,
+      9892,
+      9864,
+      9836,
+      9824
+    ],
+    "post_cleanup_seconds": 30.06,
+    "final_handoff_kib": 9884
+  },
+  "cleanup": {
+    "addresses_unchanged": true,
+    "routes_unchanged": true,
+    "firewall_unchanged": true,
+    "original_modules_unchanged": true,
+    "boot_unchanged": true,
+    "taint_unchanged": true,
+    "taint_before": 4608,
+    "taint_after": 4608,
+    "tun_module_absent": true,
+    "tun_misc_absent": true,
+    "standard_tun_node_absent": true,
+    "ram_artifacts_removed": true,
+    "original_supervisor_running": true,
+    "smsweb_http_status": 200,
+    "final_handoff_time": "2026-11-13T19:04:52+08:00",
+    "no_test_processes_remain": true
+  },
+  "authorization_variations": [
+    "User explicitly allowed on-site power recovery and abnormal reboot; neither was used.",
+    "User explicitly allowed temporary smsweb pause and restoration."
+  ],
+  "raw_logs_committed": false,
+  "raw_log_runs": [
+    "R20261113TUN01",
+    "R20261113TUN02",
+    "R20261113TUN03"
+  ],
+  "full_tun_runtime_compatibility_proven": false
+}
