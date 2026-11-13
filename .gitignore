@@ -30,3 +30,6 @@ clock.json
 push-state.json
 .dev.vars*
 .wrangler/
+
+# Offline kernel validation uses local captures and external source archives.
+tools/tun-validation/__pycache__/
