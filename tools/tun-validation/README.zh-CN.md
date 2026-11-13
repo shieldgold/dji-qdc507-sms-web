@@ -21,9 +21,10 @@
 | 编译器 | Ubuntu/Linaro GCC 4.9.3-13ubuntu2 正式版；与原厂主版本、次版本、补丁版本均一致 |
 | 驱动大小 | 26,664 字节，约 26.0 KiB；这是磁盘文件大小，不是运行内存占用 |
 | 驱动 SHA-256 | `2b44764dc5bee73faab5671bc5575cb08cb08c8cb68854fb8ef1a85b5ca8637d` |
-| 验证脚本测试 | 17 项单元测试通过，增加了正式版/预发布版区分和私有配置宏语义测试 |
+| 验证脚本测试 | 22 项单元测试通过，增加了正式版/预发布版区分和私有配置宏语义测试 |
 | 私有配置对照 | 基线、13 项逐项恢复、全部恢复，共 15 组；预处理文件和目标文件分别完全一致 |
 | TUN 依赖闭包 | 515 个实际依赖文件均未引用这 13 项私有宏 |
+| QRAWDATA 二进制分析 | 596 条可达指令、19 个外部 API；未见网络/TUN 调用，共享文件操作表布局一致 |
 
 机器可读结果见 [result.json](result.json)，私有配置分析见 [专项报告](PRIVATE_CONFIG_AUDIT.zh-CN.md) 和 [对照实验记录](private-config-result.json)。前一轮 GCC 4.9.4 记录见 [历史结果](https://github.com/shieldgold/dji-qdc507-sms-web/blob/691e151/tools/tun-validation/result.json)。未将设备启动分区、原厂驱动、原始配置或其他私有状态提交到 Git。
 
@@ -35,7 +36,7 @@
 4. 静态检查只能核对接口存在、部分 ABI 元数据及配置。不能证明网络结构所有字段偏移、驱动加载、TUN 创建或稳定性。后续临时加载也属于设备改动，应在单独授权的阶段执行。
 5. 本结果只针对 TUN 驱动构建。IKEv2/IPsec 客户端的编译、内存、路由、吞吐和断线恢复均未在本轮验证。
 
-13 项源码缺口和全部配置差异已记录在 `result.json`，校验器会拒绝名单之外的配置变化。旁证 SDK 定位了其中 12 项的定义和使用处，`CONFIG_QRAWDATA` 的实际实现尚未公开定位，不能把当前候选的宏对照结果扩展成对其厂商实现的完整保证。
+13 项源码缺口和全部配置差异已记录在 `result.json`，校验器会拒绝名单之外的配置变化。旁证 SDK 定位了其中 12 项的定义和使用处；随后从原厂内核定位了 `CONFIG_QRAWDATA` 的 procfs/MTD 实现，并核对共享文件操作表布局，见 [QRAWDATA ABI 专项分析](QRAWDATA_ABI_ANALYSIS.zh-CN.md)。原始源码仍未找到，不把静态分析扩展为整个厂商内核 ABI 的完整保证。
 
 ## 固定输入
 
@@ -53,7 +54,8 @@
 校验器不访问设备。`build.sh` 只操作本地文件和 Docker，也不提供部署入口。
 
 ```sh
-python3 -m unittest discover -s tools/tun-validation -p 'test_*.py'
+python3 -m pip install --target /Users/shield/Documents/ChatGPT/DJI-4G/tun-validation-local/qrawdata-analysis/python-deps -r tools/tun-validation/qrawdata-requirements.txt
+PYTHONPATH=/Users/shield/Documents/ChatGPT/DJI-4G/tun-validation-local/qrawdata-analysis/python-deps python3 -m unittest discover -s tools/tun-validation -p 'test_*.py'
 sh -n tools/tun-validation/build.sh
 
 # 已有本次 qdc507-voice-builder:local 镜像；从其他环境准备时先构建项目 voice/Dockerfile。

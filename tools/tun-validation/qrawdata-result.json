@@ -1,0 +1,626 @@
+{
+  "image_sha256": "62daa067512597e59b952f45be8cd5b6d34fc75265d0f60c5a3b8b8f09ecea2a",
+  "mapping_base": "0xc0008000",
+  "analysis_kind": "GNU objdump plus Capstone static instruction analysis, not a successful REA decompilation",
+  "device_accessed": false,
+  "runtime_verified": false,
+  "proc_name": "quec_rawdata",
+  "proc_path": "/proc/quec_rawdata",
+  "registration": {
+    "entry": "0xc05dfc8c",
+    "callsite": "0xc05dfca8",
+    "api": "proc_create_data",
+    "mode": 0,
+    "parent": null,
+    "data": null,
+    "file_operations": "0xc04d81e8"
+  },
+  "callbacks": {
+    "unlocked_ioctl": "0xc038fb6c",
+    "open": "0xc038f794",
+    "release": "0xc038f9d8"
+  },
+  "candidate_file_operations_layout": {
+    "bytes": 116,
+    "unlocked_ioctl": 40,
+    "open": 52,
+    "release": 60
+  },
+  "factory_nonzero_operation_offsets": [
+    40,
+    52,
+    60
+  ],
+  "factory_next_crc_table_address": "0xc04d825c",
+  "factory_file_operations_extent": 116,
+  "ioctl_commands": {
+    "get_record": "0x50001",
+    "set_record": "0x50002"
+  },
+  "ioctl_buffer": {
+    "bytes": 136,
+    "index_offset": 0,
+    "length_offset": 4,
+    "payload_offset": 8,
+    "payload_capacity": 128
+  },
+  "record_lengths": [
+    76,
+    128,
+    8,
+    73
+  ],
+  "mtd_partition_name": "rawdata",
+  "cache_state_address": "0xc06896b8",
+  "mutex_address": "0xc062ac40",
+  "network_named_api_calls": [],
+  "full_system_abi_proven": false,
+  "control_flow": {
+    "instruction_count": 596,
+    "external_calls": [
+      "__kmalloc",
+      "__memzero",
+      "__udivsi3",
+      "arm_copy_from_user",
+      "arm_copy_to_user",
+      "get_mtd_device_nm",
+      "kfree",
+      "kmalloc_order",
+      "memcmp",
+      "memcpy",
+      "mtd_block_isbad",
+      "mtd_block_markbad",
+      "mtd_erase",
+      "mtd_read",
+      "mtd_write",
+      "mutex_lock",
+      "mutex_unlock",
+      "proc_create_data",
+      "put_mtd_device"
+    ],
+    "calls": [
+      {
+        "site": "0xc038f56c",
+        "target": "0xc049d57c",
+        "name": "mutex_lock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f5a8",
+        "target": "0xc038fd00",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f5d4",
+        "target": "0xc007bb58",
+        "name": "kmalloc_order",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f5e8",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f5f0",
+        "target": "0xc038fe5c",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f5fc",
+        "target": "0xc038fe7c",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f610",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f61c",
+        "target": "0xc0093988",
+        "name": "__kmalloc",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f638",
+        "target": "0xc038fdcc",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f658",
+        "target": "0xc038fdec",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f66c",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f6ac",
+        "target": "0xc038fd14",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f6d0",
+        "target": "0xc015fa20",
+        "name": "memcpy",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f700",
+        "target": "0xc009312c",
+        "name": "kfree",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f714",
+        "target": "0xc038fe88",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f728",
+        "target": "0xc009312c",
+        "name": "kfree",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f768",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f774",
+        "target": "0xc049d3a4",
+        "name": "mutex_unlock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f798",
+        "target": "0xc038f560",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f7bc",
+        "target": "0xc049d57c",
+        "name": "mutex_lock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f7d4",
+        "target": "0xc038fe5c",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f7e0",
+        "target": "0xc038fe7c",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f810",
+        "target": "0xc038fe88",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f830",
+        "target": "0xc038fdcc",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f844",
+        "target": "0xc038fd7c",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f864",
+        "target": "0xc038fe40",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f874",
+        "target": "0xc038fdec",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f8bc",
+        "target": "0xc038fd48",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f910",
+        "target": "0xc049d3a4",
+        "name": "mutex_unlock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f938",
+        "target": "0xc049d57c",
+        "name": "mutex_lock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f990",
+        "target": "0xc038f7a4",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f998",
+        "target": "0xc038f7a4",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f9a0",
+        "target": "0xc038fd04",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f9b4",
+        "target": "0xc009312c",
+        "name": "kfree",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f9c4",
+        "target": "0xc049d3a4",
+        "name": "mutex_unlock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f9dc",
+        "target": "0xc038f930",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038f9f8",
+        "target": "0xc049d57c",
+        "name": "mutex_lock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fa5c",
+        "target": "0xc01662b8",
+        "name": "memcmp",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fa80",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fa90",
+        "target": "0xc015fa20",
+        "name": "memcpy",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fab4",
+        "target": "0xc049d3a4",
+        "name": "mutex_unlock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fadc",
+        "target": "0xc049d57c",
+        "name": "mutex_lock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fb40",
+        "target": "0xc015fa20",
+        "name": "memcpy",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fb54",
+        "target": "0xc049d3a4",
+        "name": "mutex_unlock",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fbc4",
+        "target": "0xc015db88",
+        "name": "arm_copy_from_user",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fc00",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fc18",
+        "target": "0xc038f560",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fc38",
+        "target": "0xc038facc",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fc68",
+        "target": "0xc015dfc0",
+        "name": "arm_copy_to_user",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fc90",
+        "target": "0xc015db88",
+        "name": "arm_copy_from_user",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fcbc",
+        "target": "0xc038f560",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fcd0",
+        "target": "0xc038f9e8",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fce0",
+        "target": "0xc038f930",
+        "name": null,
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fd00",
+        "target": "0xc0236b90",
+        "name": "get_mtd_device_nm",
+        "kind": "branch_or_tail_call"
+      },
+      {
+        "site": "0xc038fd08",
+        "target": "0xc0236fd0",
+        "name": "put_mtd_device",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fd3c",
+        "target": "0xc0236ef0",
+        "name": "mtd_read",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fd70",
+        "target": "0xc0236014",
+        "name": "mtd_write",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fd94",
+        "target": "0xc0160180",
+        "name": "__memzero",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fdc0",
+        "target": "0xc0236ffc",
+        "name": "mtd_erase",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fddc",
+        "target": "0xc02364a8",
+        "name": "mtd_block_isbad",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fe04",
+        "target": "0xc015f6d8",
+        "name": "__udivsi3",
+        "kind": "call"
+      },
+      {
+        "site": "0xc038fe50",
+        "target": "0xc02364f4",
+        "name": "mtd_block_markbad",
+        "kind": "branch_or_tail_call"
+      },
+      {
+        "site": "0xc038fe74",
+        "target": "0xc015f6d8",
+        "name": "__udivsi3",
+        "kind": "call"
+      },
+      {
+        "site": "0xc05dfca8",
+        "target": "0xc00e0dbc",
+        "name": "proc_create_data",
+        "kind": "call"
+      }
+    ],
+    "literals": [
+      {
+        "site": "0xc038f568",
+        "slot": "0xc038f784",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f570",
+        "slot": "0xc038f788",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f5a0",
+        "slot": "0xc038f78c",
+        "value": "0xc0560d44"
+      },
+      {
+        "site": "0xc038f644",
+        "slot": "0xc038f788",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f65c",
+        "slot": "0xc038f788",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f670",
+        "slot": "0xc038f788",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f73c",
+        "slot": "0xc038f790",
+        "value": "0xc06896bc"
+      },
+      {
+        "site": "0xc038f770",
+        "slot": "0xc038f784",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f7b8",
+        "slot": "0xc038f920",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f7c0",
+        "slot": "0xc038f924",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f90c",
+        "slot": "0xc038f920",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f934",
+        "slot": "0xc038f9d0",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f93c",
+        "slot": "0xc038f9d4",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f984",
+        "slot": "0xc038f9d4",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038f9c0",
+        "slot": "0xc038f9d0",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f9f0",
+        "slot": "0xc038fac0",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038f9fc",
+        "slot": "0xc038fac4",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038fa2c",
+        "slot": "0xc038fac8",
+        "value": "0xc04d81d8"
+      },
+      {
+        "site": "0xc038fab0",
+        "slot": "0xc038fac0",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038fad4",
+        "slot": "0xc038fb60",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038fae0",
+        "slot": "0xc038fb64",
+        "value": "0xc06896b8"
+      },
+      {
+        "site": "0xc038fb0c",
+        "slot": "0xc038fb68",
+        "value": "0xc04d81d8"
+      },
+      {
+        "site": "0xc038fb50",
+        "slot": "0xc038fb60",
+        "value": "0xc062ac40"
+      },
+      {
+        "site": "0xc038fb6c",
+        "slot": "0xc038fcf8",
+        "value": "0x50001"
+      },
+      {
+        "site": "0xc038fc2c",
+        "slot": "0xc038fcfc",
+        "value": "0xc04d81d8"
+      },
+      {
+        "site": "0xc038fca8",
+        "slot": "0xc038fcfc",
+        "value": "0xc04d81d8"
+      },
+      {
+        "site": "0xc038fe98",
+        "slot": "0xc038fefc",
+        "value": "0xc04d825c"
+      },
+      {
+        "site": "0xc038fee4",
+        "slot": "0xc038ff00",
+        "value": "0x4c11db7"
+      },
+      {
+        "site": "0xc05dfca0",
+        "slot": "0xc05dfcb8",
+        "value": "0xc04d81e8"
+      },
+      {
+        "site": "0xc05dfca4",
+        "slot": "0xc05dfcbc",
+        "value": "0xc0560d3f"
+      }
+    ],
+    "unresolved": []
+  },
+  "limitations": [
+    "Private routine names and C field names are analysis labels, not recovered original source symbols.",
+    "Documented exported kernel APIs are call-graph boundaries; their internals are not re-proven here.",
+    "This excludes observed direct rawdata/TUN coupling, not every possible unpublished firmware difference."
+  ]
+}

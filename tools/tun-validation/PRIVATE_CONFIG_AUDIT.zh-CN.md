@@ -2,7 +2,7 @@
 
 2026-11-13：**在本次公开 3.18.44 候选源码范围内，这 13 项配置的缺失未改变 TUN 的预处理结果或目标文件。** 逐项恢复及合并恢复实验均通过。公开 EC20 SDK 中还定位了其中 12 项的定义和引用，没有发现它们改变网络公共头文件或 TUN 数据结构。
 
-`CONFIG_QRAWDATA` 的实际厂商实现仍未定位。因此不能把上述实验扩展为“已证明 QDC507 全部私有补丁均兼容”。本轮没有上传或加载驱动，也没有修改模块配置、重启或刷机。
+后续已从原厂内核定位 `CONFIG_QRAWDATA` 的 procfs/MTD 存储实现，并核对共享文件操作表布局，见 [QRAWDATA ABI 专项分析](QRAWDATA_ABI_ANALYSIS.zh-CN.md)。原始源文件仍未找到，也不能把这些局部静态证据扩展为“已证明 QDC507 全部私有补丁均兼容”。本轮没有上传或加载驱动，也没有修改模块配置、重启或刷机。
 
 ## 分析方法与边界
 
@@ -29,7 +29,7 @@
 | `CONFIG_QTZONE` | n | `drivers/quectel-drivers/qtzone/`、Kconfig：TrustZone 支持 | 实机禁用；恢复禁用宏语义不改变 TUN |
 | `CONFIG_QSMD` | n | `drivers/quectel-drivers/qsmd/`、Kconfig：legacy 驱动 | 实机禁用；恢复禁用宏语义不改变 TUN |
 | `CONFIG_QSMEM` | n | `drivers/quectel-drivers/qsmem/`、Kconfig：legacy 驱动 | 实机禁用；恢复禁用宏语义不改变 TUN |
-| `CONFIG_QRAWDATA` | y | 尚未定位实际厂商实现；候选源码及 TUN 依赖闭包没有该宏 | 当前候选中恢复宏无影响；原厂实现的完整影响仍未知 |
+| `CONFIG_QRAWDATA` | y | 已从原厂内核恢复 `/proc/quec_rawdata` 私有 ioctl 与 MTD 存储路径；原始源文件仍未找到 | 宏恢复不改变候选；二进制未见网络/TUN 耦合，共享文件操作表布局一致，详见专项分析 |
 | `CONFIG_QUECTEL_AUDIO_DRIVER` | y | `qconfig/Kconfig`、`sound/soc/msm/`：音频平台、codec、AFE/PCM 控制 | 已见源码只影响音频；未发现 TUN 或网络结构条件分支 |
 | `CONFIG_QUECTEL_PCM16K_SUPPORT` | y | `sound/soc/msm/`、`sound/soc/codecs/alc5616.c`：16k PCM 相关参数和接口 | 宏恢复后 TUN 不变 |
 | `CONFIG_QUECTEL_POWER_DRIVER` | y | `drivers/power/reset/msm-poweroff.c`：电源控制属性 | 宏恢复后 TUN 不变；电源行为另属运行时环境 |
