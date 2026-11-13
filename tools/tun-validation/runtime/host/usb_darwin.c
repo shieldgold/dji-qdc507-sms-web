@@ -1,6 +1,7 @@
 // IOKit transport for the selected ADB interface only. No AT, resets,
 // alternate-setting changes, pipe-stall clearing, or device seizure.
 #include "usb_darwin.h"
+#include "signal_guard.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/IOKitLib.h>
@@ -155,8 +156,19 @@ qdc_usb *qdc_open(uint16_t vid, uint16_t pid, uint32_t location) {
   return h;
 }
 int qdc_write(qdc_usb *h, const void *p, uint32_t n) {
+  sigset_t old;
+  int sigerr = qdc_signal_enter(&old);
+  if (sigerr) {
+    snprintf(last, sizeof(last), "USB write signal guard failed: %d", sigerr);
+    return -1;
+  }
   IOReturn r =
       (*h->iface)->WritePipeTO(h->iface, h->out, (void *)p, n, 2000, 2000);
+  sigerr = qdc_signal_leave(&old);
+  if (sigerr) {
+    snprintf(last, sizeof(last), "USB write signal restore failed: %d", sigerr);
+    return -1;
+  }
   if (r != kIOReturnSuccess) {
     error("ADB WritePipeTO", r);
     return -1;
@@ -164,8 +176,20 @@ int qdc_write(qdc_usb *h, const void *p, uint32_t n) {
   return 0;
 }
 int qdc_read(qdc_usb *h, void *p, uint32_t n, uint32_t ms, uint32_t *count) {
+  *count = 0;
+  sigset_t old;
+  int sigerr = qdc_signal_enter(&old);
+  if (sigerr) {
+    snprintf(last, sizeof(last), "USB read signal guard failed: %d", sigerr);
+    return -1;
+  }
   UInt32 size = n;
   IOReturn r = (*h->iface)->ReadPipeTO(h->iface, h->in, p, &size, ms, ms);
+  sigerr = qdc_signal_leave(&old);
+  if (sigerr) {
+    snprintf(last, sizeof(last), "USB read signal restore failed: %d", sigerr);
+    return -1;
+  }
   if (r == kIOReturnSuccess) {
     *count = size;
     return 0;
@@ -174,6 +198,9 @@ int qdc_read(qdc_usb *h, void *p, uint32_t n, uint32_t ms, uint32_t *count) {
     *count = 0;
     return 0;
   }
-  error("ADB ReadPipeTO", r);
+  IOReturn pipe = (*h->iface)->GetPipeStatus(h->iface, h->in);
+  snprintf(last, sizeof(last),
+           "ADB ReadPipeTO: 0x%08x requested=%u returned=%u timeout_ms=%u pipe=0x%08x",
+           (unsigned)r, n, (unsigned)size, ms, (unsigned)pipe);
   return -1;
 }

@@ -18,6 +18,7 @@ func main() {
 	location := flag.String("location", "", "exact USB location")
 	dir := flag.String("logdir", "", "new host evidence directory")
 	run := flag.String("run", "", "unique run id")
+	trace := flag.Bool("usb-trace", false, "persist USB transfer metadata without payloads")
 	flag.Parse()
 	if *dir == "" || !safeID.MatchString(*run) {
 		fmt.Fprintln(os.Stderr, "exact USB identity, unique run id and new logdir required")
@@ -67,6 +68,23 @@ func main() {
 		os.Exit(1)
 	}
 	defer tr.Close()
+	if *trace {
+		f, err := os.OpenFile(filepath.Join(*dir, "usb-transfers.jsonl"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		tr = &tracedTransport{transport: tr, save: func(e transferEvent) error {
+			b, err := json.Marshal(e)
+			if err != nil {
+				return err
+			}
+			if _, err = f.Write(append(b, '\n')); err != nil {
+				return err
+			}
+			return f.Sync()
+		}}
+	}
 	emit("ready", map[string]any{"vid": v, "pid": p, "location": l, "automatic_recovery": false, "at_commands": false})
 	c := newClient(tr)
 	c.orphan = func(p packet) error {

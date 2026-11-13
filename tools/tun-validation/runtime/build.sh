@@ -27,6 +27,8 @@ docker run --rm --network none --platform linux/amd64 \
     arm-linux-gnueabi-readelf -h -l /out/qdc-tun-probe > /out/probe-elf.txt
     '
 (
+    cc -Wall -Wextra -Werror "$SOURCE_DIR/test_signal_guard.c" -o "$LOCAL_DIR/runtime-build/test-signal-guard"
+    "$LOCAL_DIR/runtime-build/test-signal-guard"
     cd "$SOURCE_DIR/host"
     env -u GOROOT GOTOOLCHAIN=local go test -race ./...
     env -u GOROOT GOTOOLCHAIN=local go vet ./...
