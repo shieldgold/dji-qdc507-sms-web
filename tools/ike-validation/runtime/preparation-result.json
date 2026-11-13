@@ -1,0 +1,130 @@
+{
+  "status": "prepared_offline",
+  "date": "2026-11-13",
+  "device_executed": false,
+  "uploaded_client": false,
+  "loaded_tun": false,
+  "flashed": false,
+  "autostart_modified": false,
+  "scope": "Computer-only preparation for authorized-later RAM idle tests; no real VPN peer or credentials",
+  "guard": {
+    "bytes": 75052,
+    "sha256": "042ddc5201c026fc30d8791c8ffacfdec083cf27a77ebb43610e5cb8a29ef90a",
+    "static_arm_eabi5_soft_float": true
+  },
+  "host_controller": {
+    "sha256": "6257b6564a7b65b2790267776c8c44e89c4f59506ec31386c49b86a54b6de414",
+    "same_as_signal_guard_validated_controller": true
+  },
+  "validation": {
+    "runtime_python_tests": 10,
+    "existing_ike_python_tests": 8,
+    "c_proc_tests": "passed; full reads including forced short FIFO reads, overflow rejection and PID identities",
+    "go_tests": 15,
+    "go_race": "passed, count=1",
+    "go_vet": "passed",
+    "shell_syntax": "passed",
+    "arm_linux_vm": {
+      "kernel": "3.18.44 mainline, computer only, TUN built-in, IPV6_SIT=n",
+      "network": "no network device or USB passthrough",
+      "status": "passed",
+      "cases": [
+        "no_go",
+        "normal_cleanup",
+        "streamed_app_logs",
+        "early_exit_cleanup",
+        "kmsg_abort_cleanup",
+        "cli_timeout_cleanup",
+        "runtime_memory_abort",
+        "blocked_output_deadline",
+        "low_memory_refusal",
+        "supervisor_auto_resume",
+        "supervisor_manual_resume",
+        "original_network_unchanged"
+      ],
+      "artifacts": {
+        "lab-only-runtime-zImage": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "lab-only-runtime-rootfs.cpio.gz": "3ba7f5c289fa44c677689ed66d25907034be8fe9cb7a1fb8e72a0882e0484508",
+        "qdc-ike-guard": "042ddc5201c026fc30d8791c8ffacfdec083cf27a77ebb43610e5cb8a29ef90a",
+        "charon": "96bf484a445a1d9332a9614b231c5beeeb82bc47c8a9cf0aaf3bbc35642acf37",
+        "swanctl": "0493bd368affea54ecf950701175ec6531c6d6de8c22b4889f7867a4ac81af7f"
+      },
+      "local_logs": "ike-validation-local/logs/runtime-tools-vm-5"
+    },
+    "stage_cards": {
+      "count": 30,
+      "shell_syntax": "passed without execution",
+      "max_command_bytes": 1292,
+      "max_transfer_bytes": 1048576,
+      "reassembly_hashes": "passed"
+    }
+  },
+  "earlier_attempts": {
+    "1": "failed before useful normal-start log; retained",
+    "2": "generic VM enabled automatic sit0; namespace allowlist refused; changed VM to match captured module IPV6_SIT=n",
+    "3": "seven-case diagnostic subset passed, superseded by final tests; an in-flight computer build-script edit caused a tail cleanup error and was corrected before the final successful build",
+    "4": "blocked-output fixture had not filled partial pipe space; startup stdout logs were buffered; fixture corrected and test config changed to stderr"
+  },
+  "memory_kib": {
+    "bootstrap_min": 8192,
+    "client_upload_preflight_min": 12288,
+    "samples": 3,
+    "sample_gap_seconds": 5,
+    "start_min": 8192,
+    "runtime_floor": 6144,
+    "max_drop_from_start": 3072,
+    "meminfo_period_ms": 250,
+    "full_smaps_period_ms": 1000
+  },
+  "timeouts_seconds": {
+    "no_GO": 5,
+    "idle_rounds": [
+      10,
+      60
+    ],
+    "CLI": 5,
+    "stop_TERM": 4,
+    "stop_KILL_wait": 1,
+    "hard_deadline": "idle seconds +20, then +3 SIGKILL/exit",
+    "sms_recovery_max": 300,
+    "sms_pause_window": 240
+  },
+  "limitations": [
+    "No native QDC507 startup or memory peak measured in this preparation",
+    "No IKE/ESP traffic, peer authentication or carrier network in this test plan",
+    "Driver load/unload remains staged hardware testing, not tested with the generic built-in-TUN VM",
+    "Signals and user-space timeouts cannot recover an unresponsive kernel",
+    "App/VICI output is chunk-prefixed in the supervisor stream; .raw preserves that combined stream",
+    "SMS pause/restoration and cleanup require current PID/starttime/exe checks and separate health verification"
+  ],
+  "bundle": {
+    "run_id": "IKE20261113PREP02",
+    "local_directory": "ike-validation-local/prepared-IKE20261113PREP02",
+    "ram_root": "/run/qdc-tun-IKE20261113PREP02",
+    "payload_bytes": 2988210,
+    "binds_local_absolute_paths": true,
+    "new_run_required_before_future_hardware_execution": true,
+    "archive": {
+      "local_path": "ike-validation-local/output/qdc507-ikev2-runtime-preparation-20261113.tar.gz",
+      "bytes": 3705305,
+      "sha256": "5ce5d78de9321ad0ad4cdfe64f4a6236e8e239f42955176ef06160e67d84b79a"
+    }
+  },
+  "source_sha256": {
+    "ike-validation/runtime/guard.c": "d6472b93cf2dd218e5fbb6e3563ef269409e0815447cde0814aad68766abafd7",
+    "ike-validation/runtime/proc.c": "1102e4b15a61b1cba55e995e617b55dc4cce1892c1641e1d5874a37a2d0e7333",
+    "ike-validation/runtime/proc.h": "a14ecb98fbffe2ceb285d2d38660272b25b83cc00ac16127e27c0d61cbbc412a",
+    "ike-validation/runtime/build.sh": "c3d1efb63efed2a9c3486a23029bc6d7fb72cedc572375fa64abde6f2dc58e4f",
+    "ike-validation/lab_mem.c": "14b5432c5659df0a870444ae8a663da4715329694e55930f7bb62b81f546d276",
+    "ike-validation/lab_mem.h": "9903e83528270c6b3172cfdd806602fa3bbc577c835048b831da97c595034acb",
+    "tun-validation/runtime/log_watch.c": "301255e10791e6a5f85faac5c13204f91610bff3e2b0438f821598cd17ed96cb",
+    "tun-validation/runtime/log_watch.h": "28af440256a62257b9df39f771c8e9baf007c257ac4732573b1ec897025581cc",
+    "ike-validation/runtime/prepare.py": "d515cc7c4bb5341499618339ffaf81959a2515b09b60b44f14f8fd21169d2885",
+    "ike-validation/runtime/idle.conf": "cc99d9710154bdb0c9ebd65dd81ef85606354d1fb5104008d765469afffc852f",
+    "ike-validation/runtime/vm-fixture.c": "df82f230f8e495b2cdd640daa0c798edc6d58e9c55c127b1e5af73f076587bd8",
+    "ike-validation/runtime/vm-init.sh": "ab3d3308a6293b6c294dfb7a3a37479e7af75d8a1ad3b9a5c978cb5a3a1edcaf",
+    "ike-validation/runtime/make-vm.sh": "e1eea510501450085325a962911977939cca07d21fe0787ccffc5b4f7298d7a3",
+    "ike-validation/runtime/verify-vm.py": "0d7fc5cd60431548f0ec02b31486ff5436453b82ce8d8852583c4e645ce0dc87"
+  },
+  "device_connection_opened": false
+}

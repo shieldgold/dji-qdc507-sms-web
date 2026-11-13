@@ -1,4 +1,5 @@
-// Computer-only Linux ARM VM measurement. Never used on the QDC507 module.
+// Shared proc parsers; QDC_MEM_TEST omits the computer-only VM sampler main.
+// The separately gated runtime supervisor links only these parser functions.
 #define _GNU_SOURCE
 #include "lab_mem.h"
 #include <errno.h>
