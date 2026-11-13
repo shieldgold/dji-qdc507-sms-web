@@ -1,8 +1,8 @@
-# QDC507 TUN 驱动离线构建验证
+# QDC507 TUN 驱动构建与受控验证
 
-2026-11-13 的最新结论：**GCC 4.9.3 候选 `tun.ko` 已完成一次实机正常加载、misc 注册及普通卸载。加载后的实时采集发生 USB 中止，按方案未继续打开、创建和收发；不能宣称完整运行兼容。** 静态 ABI 和 13 项私有宏实验见下文，实测详情见 [首轮运行记录](RUNTIME_TEST_2026-11-13.zh-CN.md)。
+2026-11-13 的最新结论：**GCC 4.9.3 候选 `tun.ko` 已通过实机加载、打开、私有命名空间内创建、10 组 IPv4 双向收发、关闭删除及普通卸载。** 电脑端已修复可复现的 SIGURG 同步 USB 中断路径；加载前累计约 302 秒分段采集及本轮功能测试没有再次中止。设备未重启，临时对象已清理，短信网页已恢复；没有刷机或设置开机加载。详见 [第二轮实测记录](RUNTIME_TEST_2026-11-13_ROUND2.zh-CN.md)。
 
-GCC 4.9.3 构建阶段曾只读核对模块状态；QRAWDATA 与关键 ABI 分析使用已有采集文件。这些离线阶段未上传或加载。其后经单独授权执行了首轮 RAM 暂存及一次加载/卸载，已清理并恢复短信网页；没有重启、刷机、重挂载根文件系统或设置持久加载。构建容器不接入 USB，编译阶段关闭网络。
+GCC 4.9.3 构建阶段曾只读核对模块状态；QRAWDATA 与关键 ABI 分析使用已有采集文件。这些离线阶段未上传或加载。其后经单独授权进行两轮临时实测，每轮各一次加载和普通卸载。首轮因 USB 中止而提前结束，第二轮完成最小 TUN 通路；两轮均已清理并恢复短信网页，没有重启、刷机、重挂载根文件系统或设置持久加载。构建容器不接入 USB，编译阶段关闭网络。
 
 ## 已验证的证据
 
@@ -27,6 +27,7 @@ GCC 4.9.3 构建阶段曾只读核对模块状态；QRAWDATA 与关键 ABI 分�
 | QRAWDATA 二进制分析 | 596 条可达指令、19 个外部 API；未见网络/TUN 调用，共享文件操作表布局一致 |
 | 关键 ABI 函数对照 | 检查 82 个函数，包含 68 个 TUN 导入函数；29 个函数扣除指定链接地址位后逐字一致 |
 | 对象访问旁证 | 484 组共同参数访问模式；net_device 分配大小 1232、私有区对齐位置 1248 与原厂一致 |
+| 实机 TUN 通路 | 私有命名空间内 10 组双向 IPv4 内容匹配，接口收发各 10 包/570 字节，关闭后删除、普通卸载通过 |
 
 机器可读构建结果见 [result.json](result.json)，私有配置分析见 [专项报告](PRIVATE_CONFIG_AUDIT.zh-CN.md) 和 [对照实验记录](private-config-result.json)。最新关键 ABI 检查见 [完整分析](TUN_ABI_AUDIT.zh-CN.md) 与 [机器可读记录](abi-result.json)。前一轮 GCC 4.9.4 记录见 [历史结果](https://github.com/shieldgold/dji-qdc507-sms-web/blob/691e151/tools/tun-validation/result.json)。未将设备启动分区、原厂驱动、原始配置或其他私有状态提交到 Git。
 
@@ -35,12 +36,12 @@ GCC 4.9.3 构建阶段曾只读核对模块状态；QRAWDATA 与关键 ABI 分�
 1. **源码并非已确认的 QDC507 原厂完整源码。** 候选使用公开 Quectel 源码的初始提交，原生版本为 3.18.44。将实机配置设为 `CONFIG_TUN=m` 后运行 `olddefconfig`，除这一项外，13 项 Quectel 私有配置因公开源码未包含对应定义而被移除；没有其他配置差异。这支持继续验证，但不足以证明所有厂商内部结构和补丁相同。
 2. **GCC 版本差异已消除，但不声称原厂工具链构建完全相同。** 新模块 `.comment` 为 `GCC: (Ubuntu/Linaro 4.9.3-13ubuntu2) 4.9.3`，原厂为 `GCC: (GNU) 4.9.3`。`compiler_version_matches=true`，`compiler_identical=false`。发行版补丁和原厂编译器完整来源仍未知。汇编器和链接器使用 Debian Binutils 2.35.2，不能据此声称重现了原厂整套工具链。
 3. **没有内核符号类型 CRC 可比对。** 实机 `CONFIG_MODVERSIONS=n`，因此从镜像重建的 `Module.symvers` 只用于核对导出名称，CRC 置零。它不是原厂原始构建文件。GPL 导出分类在重建中未保留；候选 TUN 驱动采用 GPL 许可证。
-4. 已核对一批网络结构访问、回调槽位和分配边界，实机正常加载/卸载也取得第一轮证据；但不能证明全部字段、差异函数语义或运行稳定性。首轮采集异常后未进入 TUN 打开、创建及收发测试。
-5. 本结果只针对 TUN 驱动构建。IKEv2/IPsec 客户端的编译、内存、路由、吞吐和断线恢复均未在本轮验证。
+4. 已核对一批网络结构访问、回调槽位和分配边界，并在第二轮完成最小 IPv4 TUN 通路；但不能证明全部字段、差异函数语义、其他功能或长期稳定性。首轮中止事件缺少当时的信号记录，不能把已复现并修复的主机缺陷扩展成对历史信号来源的完整证明。
+5. 本结果针对 TUN 驱动构建和最小运行通路。IKEv2/IPsec 客户端的编译、内存、路由、吞吐和断线恢复均未验证。
 
 13 项源码缺口和全部配置差异已记录在 `result.json`，校验器会拒绝名单之外的配置变化。旁证 SDK 定位了其中 12 项的定义和使用处；随后从原厂内核定位了 `CONFIG_QRAWDATA` 的 procfs/MTD 实现，并核对共享文件操作表布局，见 [QRAWDATA ABI 专项分析](QRAWDATA_ABI_ANALYSIS.zh-CN.md)。原始源码仍未找到，不把静态分析扩展为整个厂商内核 ABI 的完整保证。
 
-日志、分阶段验收、恢复和清理步骤见 [受控临时加载方案](TEMP_LOAD_TEST_PLAN.zh-CN.md) 与 [运行记录模板](TEMP_LOAD_RUN_RECORD.template.md)。相关工具现已实现，见 [runtime](runtime/README.zh-CN.md)；第一轮加载后的 USB 中止仍未完成根因归属。旧 [result.json](result.json) 保留离线构建当时的状态，最新分项实测见 [runtime-result.json](runtime-result.json)。
+日志、分阶段验收、恢复和清理步骤见 [受控临时加载方案](TEMP_LOAD_TEST_PLAN.zh-CN.md) 与 [运行记录模板](TEMP_LOAD_RUN_RECORD.template.md)。相关工具见 [runtime](runtime/README.zh-CN.md)，主机中断路径的复现与防护见 [USB 专项记录](USB_LOG_CHANNEL.zh-CN.md)。旧 [result.json](result.json) 保留离线构建状态；[首轮记录](RUNTIME_TEST_2026-11-13.zh-CN.md) 与 [runtime-result.json](runtime-result.json) 保留中止历史，最新分项实测为 [runtime-result-02.json](runtime-result-02.json)。
 
 ## 固定输入
 

@@ -22,9 +22,13 @@ tools/tun-validation/runtime/build.sh /Users/shield/Documents/ChatGPT/DJI-4G/tun
 
 重新建立连接时可能残留旧 stream 数据。当前版本在有界握手/OPEN 等待中留存这些包到主机事件文件，再等待当前确认；这修复了把首个旧 WRTE 当成握手失败的问题。它**没有证明最初 IOKit `kIOReturnAborted` 的原因**，也不会忽略该错误。
 
+后续已单独复现同步 IOKit 调用被 SIGURG 打断的故障，并在当前 C 线程的 USB 读写期间暂缓该信号，返回前恢复原掩码。其他信号和所有真实 I/O 错误保持原行为，不自动重试，见 [USB 专项记录](../USB_LOG_CHANNEL.zh-CN.md)。该记录也保留首轮事件缺少当时信号证据的限制。
+
+可选 `-usb-trace` 在主机目录中另建 0600 的 `usb-transfers.jsonl`，逐条记录并 fsync 传输元数据，不含 payload；落盘失败即停止。deadline_ms 是阶段剩余时限，单次 IOKit 读取仍上限 500 ms。空闲时 0 字节读取是正常轮询；发生写入错误时不能根据 transferred 字段推定远端没有收到数据，仍按未知状态处理并禁止重放。
+
 ## ARM 测试器
 
-`qdc-tun-probe` 是 525,344 字节的 ARMv7/EABI5/soft-float 静态程序。本轮在设备上只执行了 `selftest` 和 `watch`，没有执行下面的 TUN 功能模式。
+`qdc-tun-probe` 是 525,344 字节的 ARMv7/EABI5/soft-float 静态程序。首轮只执行 `selftest` 和 `watch`；第二轮已实机完成下面各功能模式，并清理所有临时对象。
 
 - `selftest`：CPU 内部的数据包/校验和及日志解析自检，不访问 TUN。
 - `watch TOKEN OBSERVE_SECONDS COMMAND_TIMEOUT ABSOLUTE_PROGRAM [ARGS...]`：先只读打开 `/dev/kmsg` 并定位到当前末端，收到主机 GO 才启动一个子命令。采集原始 kmsg 记录、序号、内存及父/子 RSS。日志丢失、错误、低内存或超时均返回失败，不主动卸载驱动。新内核异常时可能暂停仍在运行的子进程并保留现场，必须按 PID 和日志进入恢复流程；不能假设异常返回已经释放全部资源。
@@ -36,6 +40,8 @@ tools/tun-validation/runtime/build.sh /Users/shield/Documents/ChatGPT/DJI-4G/tun
 
 ## 验证边界
 
-Go 的 13 项测试覆盖即时输出、部分日志保留、不重试、门控、错误包、远端状态、sync 推送、文件覆盖保护和残留包恢复；C/Python 检查覆盖包编码/校验和/损坏包/边界、日志序号及错误识别、GO 前不执行、EOF 不执行、CLI 非法请求和 CPU 自检。数据包测试启用 AddressSanitizer/UBSan，容器模拟环境下禁用 LeakSanitizer。
+Go 的 15 项测试覆盖即时输出、部分日志保留、不重试、门控、错误包、远端状态、sync 推送、文件覆盖保护、残留包恢复及 USB trace 落盘失败时停止；C/Python 检查覆盖包编码/校验和/损坏包/边界、日志序号及错误识别、GO 前不执行、EOF 不执行、CLI 非法请求、CPU 自检和主机信号掩码恢复。数据包测试启用 AddressSanitizer/UBSan，容器模拟环境下禁用 LeakSanitizer。
 
-这些离线检查不等于 TUN 创建或收发的实机验收。首次实测因采集通道中止而在加载后停止，已正常卸载，见 [实测记录](../RUNTIME_TEST_2026-11-13.zh-CN.md)。
+`test_usb_signal_darwin.c` 是需要实机的人工诊断，不由 build.sh 自动运行；必须先关闭其他 USB 控制器，详见 USB 专项记录。
+
+离线检查不能代替实机验收。首次实测中止及正常卸载见 [首轮记录](../RUNTIME_TEST_2026-11-13.zh-CN.md)；修复后完整的最小 IPv4 TUN 验收及适用范围见 [第二轮记录](../RUNTIME_TEST_2026-11-13_ROUND2.zh-CN.md)。
