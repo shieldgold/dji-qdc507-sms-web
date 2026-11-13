@@ -1,0 +1,76 @@
+[
+  {
+    "file": "strongswan-6.1.0.tar.bz2",
+    "url": "https://download.strongswan.org/strongswan-6.1.0.tar.bz2",
+    "bytes": 4620545,
+    "sha256": "fe6c97481298767213cfc2e9a1da29fdd8018d481ff4cb9cf0283099654f20d4"
+  },
+  {
+    "file": "musl-1.2.6.tar.gz",
+    "url": "https://musl.libc.org/releases/musl-1.2.6.tar.gz",
+    "bytes": 1082499,
+    "sha256": "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a"
+  },
+  {
+    "file": "gmp-6.3.0.tar.xz",
+    "url": "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz",
+    "bytes": 2094196,
+    "sha256": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+  },
+  {
+    "file": "musl-iconv-fix.patch",
+    "url": "https://www.openwall.com/lists/musl/2026/04/03/2/1",
+    "bytes": 7502,
+    "sha256": "444fa70e52ca158fb7d4bad560637790bbf8f72e80b82fff840dd66fa83091e3"
+  },
+  {
+    "file": "musl-qsort-fixes.patch",
+    "url": "https://www.openwall.com/lists/musl/2026/04/10/3/1",
+    "bytes": 5594,
+    "sha256": "1ee29f64f9ca8e8ad7c349779d661ff6b52126a27575d3586981357a52c406fb"
+  },
+  {
+    "file": "busybox-1.37.0.tar.bz2",
+    "url": "https://busybox.net/downloads/busybox-1.37.0.tar.bz2",
+    "bytes": 2565764,
+    "sha256": "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4"
+  },
+  {
+    "file": "compiler-debs/bzip2_1.0.8-4_amd64.deb",
+    "url": "https://deb.debian.org/debian/pool/main/b/bzip2/bzip2_1.0.8-4_amd64.deb",
+    "bytes": 49268,
+    "sha256": "038b337a9f2b9bb39c6b03b3bdd79b85dec6dd360e0b93711659b91433b4d754"
+  },
+  {
+    "file": "compiler-debs/m4_1.4.18-5_amd64.deb",
+    "url": "https://deb.debian.org/debian/pool/main/m/m4/m4_1.4.18-5_amd64.deb",
+    "bytes": 203532,
+    "sha256": "3f8c1eb408d0a4cb4db7b2092f7aaced5bd2956514a91b06636ed621eab2e4ed"
+  },
+  {
+    "file": "compiler-debs/libsigsegv2_2.13-1_amd64.deb",
+    "url": "https://deb.debian.org/debian/pool/main/libs/libsigsegv/libsigsegv2_2.13-1_amd64.deb",
+    "bytes": 34804,
+    "sha256": "c56a7108e1c6dca27b4db9cce5c7c2b0c9d961b3572a1d1fe89058388401bd2b"
+  },
+  {
+    "file": "compiler-debs/cpio_2.13+dfsg-7.1~deb11u1_amd64.deb",
+    "url": "https://deb.debian.org/debian/pool/main/c/cpio/cpio_2.13+dfsg-7.1~deb11u1_amd64.deb",
+    "bytes": 244864,
+    "sha256": "20e99248f16d78b52095f29f60e203cbff26871411788e22a5ff4c934e79ab40"
+  },
+  {
+    "file": "linux-3.18.44.tar.xz",
+    "url": "https://cdn.kernel.org/pub/linux/kernel/v3.x/linux-3.18.44.tar.xz",
+    "bytes": 81082392,
+    "sha256": "5661ccb8e45ec290d16d9617056d32f54bdea1357b1b3047c9c4042c78824db2"
+  },
+  {
+    "file": "pkgconf-src.tar.gz",
+    "url": "https://codeload.github.com/pkgconf/pkgconf/tar.gz/981c80e91c2388d62784858599b57c6d95a198d5",
+    "bytes": 274126,
+    "sha256": "6cf8fe1821343e96764e32d92e182be6b90023c023440c11838ff776f5bd6b1d",
+    "commit": "981c80e91c2388d62784858599b57c6d95a198d5",
+    "scope": "host bootstrap metadata tool only"
+  }
+]

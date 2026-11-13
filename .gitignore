@@ -33,3 +33,4 @@ push-state.json
 
 # Offline kernel validation uses local captures and external source archives.
 tools/tun-validation/__pycache__/
+tools/ike-validation/__pycache__/
