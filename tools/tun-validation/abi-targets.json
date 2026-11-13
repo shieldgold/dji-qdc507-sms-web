@@ -1,0 +1,265 @@
+{
+  "objects": [
+    "drivers/char/misc.o",
+    "fs/fcntl.o",
+    "fs/read_write.o",
+    "fs/seq_file.o",
+    "kernel/sched/wait.o",
+    "kernel/time/timer.o",
+    "net/core/datagram.o",
+    "net/core/dev.o",
+    "net/core/ethtool.o",
+    "net/core/filter.o",
+    "net/core/flow_dissector.o",
+    "net/core/iovec.o",
+    "net/core/net_namespace.o",
+    "net/core/rtnetlink.o",
+    "net/core/skbuff.o",
+    "net/core/sock.o",
+    "net/ethernet/eth.o",
+    "net/ipv6/output_core.o",
+    "net/netfilter/core.o",
+    "net/sched/sch_generic.o",
+    "net/socket.o"
+  ],
+  "additional_exports": {
+    "net/core/dev.o": [
+      "dev_open",
+      "dev_queue_xmit",
+      "dev_set_mtu"
+    ],
+    "net/socket.o": [
+      "sock_from_file",
+      "sock_release",
+      "sock_sendmsg",
+      "sock_recvmsg",
+      "sock_create"
+    ],
+    "net/core/rtnetlink.o": [
+      "__rtnl_link_register"
+    ]
+  },
+  "local_helpers": [
+    {
+      "name": "sk_prot_alloc",
+      "object": "net/core/sock.o",
+      "caller": "sk_alloc",
+      "call_offset": 28
+    },
+    {
+      "name": "__dev_queue_xmit",
+      "object": "net/core/dev.o",
+      "caller": "dev_queue_xmit",
+      "call_offset": 8
+    },
+    {
+      "name": "__dev_open",
+      "object": "net/core/dev.o",
+      "caller": "dev_open",
+      "call_offset": 20
+    },
+    {
+      "name": "__netdev_update_features",
+      "object": "net/core/dev.o",
+      "caller": "netdev_update_features",
+      "call_offset": 8
+    },
+    {
+      "name": "dev_hard_start_xmit",
+      "object": "net/core/dev.o",
+      "caller": "__dev_queue_xmit",
+      "call_offset": 1020
+    }
+  ],
+  "argument_types": {
+    "netif_set_real_num_tx_queues": {
+      "arg0": "net_device"
+    },
+    "netif_set_real_num_rx_queues": {
+      "arg0": "net_device"
+    },
+    "dev_set_mac_address": {
+      "arg0": "net_device"
+    },
+    "unregister_netdevice_queue": {
+      "arg0": "net_device"
+    },
+    "register_netdevice": {
+      "arg0": "net_device"
+    },
+    "free_netdev": {
+      "arg0": "net_device"
+    },
+    "ethtool_op_get_link": {
+      "arg0": "net_device"
+    },
+    "ether_setup": {
+      "arg0": "net_device"
+    },
+    "netif_carrier_off": {
+      "arg0": "net_device"
+    },
+    "netif_carrier_on": {
+      "arg0": "net_device"
+    },
+    "eth_validate_addr": {
+      "arg0": "net_device"
+    },
+    "eth_mac_addr": {
+      "arg0": "net_device"
+    },
+    "dev_open": {
+      "arg0": "net_device"
+    },
+    "dev_set_mtu": {
+      "arg0": "net_device"
+    },
+    "__dev_open": {
+      "arg0": "net_device"
+    },
+    "__netdev_update_features": {
+      "arg0": "net_device"
+    },
+    "kfree_skb": {
+      "arg0": "sk_buff"
+    },
+    "skb_copy_ubufs": {
+      "arg0": "sk_buff"
+    },
+    "skb_partial_csum_set": {
+      "arg0": "sk_buff"
+    },
+    "skb_put": {
+      "arg0": "sk_buff"
+    },
+    "skb_tx_error": {
+      "arg0": "sk_buff"
+    },
+    "__skb_flow_dissect": {
+      "arg0": "sk_buff"
+    },
+    "__skb_get_hash": {
+      "arg0": "sk_buff"
+    },
+    "skb_tstamp_tx": {
+      "arg0": "sk_buff"
+    },
+    "skb_copy_datagram_const_iovec": {
+      "arg0": "sk_buff"
+    },
+    "skb_copy_datagram_from_iovec": {
+      "arg0": "sk_buff"
+    },
+    "zerocopy_sg_from_iovec": {
+      "arg0": "sk_buff"
+    },
+    "ipv6_proxy_select_ident": {
+      "arg0": "sk_buff"
+    },
+    "dev_queue_xmit": {
+      "arg0": "sk_buff"
+    },
+    "__dev_queue_xmit": {
+      "arg0": "sk_buff"
+    },
+    "sk_filter": {
+      "arg0": "sock",
+      "arg1": "sk_buff"
+    },
+    "__skb_recv_datagram": {
+      "arg0": "sock"
+    },
+    "sock_alloc_send_pskb": {
+      "arg0": "sock"
+    },
+    "sock_recv_errqueue": {
+      "arg0": "sock"
+    },
+    "sk_free": {
+      "arg0": "sock"
+    },
+    "sk_release_kernel": {
+      "arg0": "sock"
+    },
+    "sk_detach_filter": {
+      "arg0": "sock"
+    },
+    "__sock_tx_timestamp": {
+      "arg0": "sock"
+    },
+    "sock_init_data": {
+      "arg0": "socket",
+      "arg1": "sock"
+    },
+    "sk_attach_filter": {
+      "arg1": "sock"
+    },
+    "sk_alloc": {
+      "arg0": "net",
+      "arg3": "proto"
+    },
+    "sk_prot_alloc": {
+      "arg0": "proto"
+    },
+    "eth_type_trans": {
+      "arg0": "sk_buff",
+      "arg1": "net_device"
+    },
+    "__dev_get_by_name": {
+      "arg0": "net"
+    },
+    "__put_net": {
+      "arg0": "net"
+    },
+    "netif_tx_wake_queue": {
+      "arg0": "netdev_queue"
+    },
+    "do_sync_read": {
+      "arg0": "file"
+    },
+    "do_sync_write": {
+      "arg0": "file"
+    },
+    "sock_from_file": {
+      "arg0": "file"
+    },
+    "sock_release": {
+      "arg0": "socket"
+    },
+    "sock_sendmsg": {
+      "arg0": "socket"
+    },
+    "sock_recvmsg": {
+      "arg0": "socket"
+    },
+    "__rtnl_link_register": {
+      "arg0": "rtnl_link_ops"
+    },
+    "init_timer_key": {
+      "arg0": "timer_list"
+    },
+    "mod_timer": {
+      "arg0": "timer_list"
+    },
+    "del_timer": {
+      "arg0": "timer_list"
+    },
+    "misc_register": {
+      "arg0": "miscdevice"
+    },
+    "misc_deregister": {
+      "arg0": "miscdevice"
+    },
+    "__init_waitqueue_head": {
+      "arg0": "__wait_queue_head"
+    },
+    "__wake_up_sync_key": {
+      "arg0": "__wait_queue_head"
+    },
+    "dev_hard_start_xmit": {
+      "arg0": "sk_buff",
+      "arg1": "net_device",
+      "arg2": "netdev_queue"
+    }
+  }
+}
