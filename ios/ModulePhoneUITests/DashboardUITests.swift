@@ -44,7 +44,7 @@ final class DashboardUITests: XCTestCase {
         XCTAssertTrue(test.isEnabled)
         test.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let banner = springboard.staticTexts["模块电话 · 通知测试"]
+        let banner = springboard.staticTexts["小电波 · 通知测试"]
         XCTAssertTrue(banner.waitForExistence(timeout: 8), "Scheduled local banner did not arrive")
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "local-notification-banner"; attachment.lifetime = .keepAlways; add(attachment)

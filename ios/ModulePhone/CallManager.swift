@@ -178,7 +178,7 @@ import ModuleCore
   guard connected, !hasCall, let n = PhoneNumber.normalize(number) else { error = "请连接模块并输入有效电话号码"; return }
   guard status?.audio.available == true else { error = "模块音频尚未准备好"; return }
   let allowed = await AVAudioApplication.requestRecordPermission()
-  guard allowed else { error = "请在系统设置中允许“模块电话”使用麦克风"; return }
+  guard allowed else { error = "请在系统设置中允许“小电波”使用麦克风"; return }
   guard connected, !hasCall else { error = "电话状态已变化，请重试"; return }
   do { try AudioBridge.prepareSession() } catch { self.error = error.localizedDescription; return }
   outgoingRequest = UUID().uuidString; outgoingAt = Date(); localPending = true

@@ -80,7 +80,7 @@ import PushKit
         guard enabled, permitted else { return }
         error = ""
         let content = UNMutableNotificationContent()
-        content.title = "模块电话 · 通知测试"
+        content.title = "小电波 · 通知测试"
         content.body = "本机横幅正常。后台接收请使用“测试后台推送”。"
         content.sound = .default
         do { try await center.add(UNNotificationRequest(identifier: "notification-test", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false))) }

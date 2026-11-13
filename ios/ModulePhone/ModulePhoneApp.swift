@@ -32,7 +32,7 @@ struct ContentView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var sheet: DashboardSheet?
     @State private var showKeypad = false
-    private let teal = Color(red: 0.02, green: 0.43, blue: 0.39)
+    private let brandAccent = Color(red: 0.82, green: 0.29, blue: 0.04)
     private let keys = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["*", "0", "#"]]
     private let letters = ["2":"ABC", "3":"DEF", "4":"GHI", "5":"JKL", "6":"MNO", "7":"PQRS", "8":"TUV", "9":"WXYZ", "0":"+"]
     private var pollingKey: String { "\(phone.loggedIn)-\(phone.api.endpoint.url)-\(phase == .active)" }
@@ -48,7 +48,7 @@ struct ContentView: View {
             .padding(.horizontal, 20)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Color(.systemGroupedBackground)).tint(teal)
+        .background(Color(.systemGroupedBackground)).tint(brandAccent)
         .sheet(item: $sheet, onDismiss: {
             dashboard.inboxVisible = false
             Task {
@@ -94,7 +94,7 @@ struct ContentView: View {
         VStack(spacing: compact ? 8 : 12) {
             HStack(spacing: 10) {
                 Image("ModuleMark").resizable().frame(width: 34, height: 34).clipShape(RoundedRectangle(cornerRadius: 9))
-                Text("模块电话").font(.title2.weight(.bold))
+                Text("小电波").font(.title2.weight(.bold))
                 Spacer()
                 Button { sheet = .notifications } label: {
                     Image(systemName: notifications.enabled && notifications.permitted ? "bell.badge" : "bell").frame(width: 44, height: 44)
@@ -129,15 +129,15 @@ struct ContentView: View {
     private var connectionCard: some View {
         Button { sheet = .connection } label: {
             HStack(spacing: 10) {
-                Image(systemName: "antenna.radiowaves.left.and.right").font(.title3).foregroundStyle(phone.connected ? teal : .orange)
+                Image(systemName: "antenna.radiowaves.left.and.right").font(.title3).foregroundStyle(phone.connected ? brandAccent : .orange)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(phone.connected ? "模块已连接" : phone.busy ? "正在连接…" : "连接模块").font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                     Text(connectionSubtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 Text(phone.connected ? (phone.status?.audio.available == true ? "语音就绪" : "语音待就绪") : "待连接")
-                    .font(.caption.weight(.medium)).foregroundStyle(phone.connected ? teal : .secondary)
-                    .padding(.horizontal, 9).padding(.vertical, 6).background(teal.opacity(0.07), in: Capsule())
+                    .font(.caption.weight(.medium)).foregroundStyle(phone.connected ? brandAccent : .secondary)
+                    .padding(.horizontal, 9).padding(.vertical, 6).background(brandAccent.opacity(0.07), in: Capsule())
             }.padding(12).background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
         }.buttonStyle(.plain)
     }
@@ -165,7 +165,7 @@ struct ContentView: View {
                 Button { Task { await phone.dial() } } label: {
                     Image(systemName: "phone.fill").font(.system(size: 27, weight: .semibold))
                         .frame(width: compact ? 58 : 66, height: compact ? 58 : 66)
-                        .foregroundStyle(.white).background(canDial ? teal : Color(.systemGray3), in: Circle())
+                        .foregroundStyle(.white).background(canDial ? brandAccent : Color(.systemGray3), in: Circle())
                 }.disabled(!canDial).accessibilityLabel("拨打电话")
                 Button { if !phone.number.isEmpty { phone.number.removeLast() } } label: {
                     Image(systemName: "delete.left").font(.title3).frame(width: 64, height: 52)
@@ -180,12 +180,12 @@ struct ContentView: View {
         VStack(spacing: compact ? 10 : 16) {
             if compact && showKeypad {
                 HStack {
-                    Text(phone.current?.stateLabel ?? "电话").font(.caption).foregroundStyle(teal)
+                    Text(phone.current?.stateLabel ?? "电话").font(.caption).foregroundStyle(brandAccent)
                     Text(phone.current?.number ?? phone.number).font(.title3).lineLimit(1).minimumScaleFactor(0.6)
                 }.frame(minHeight: 28)
             } else {
             VStack(spacing: 4) {
-                Text(phone.current?.stateLabel ?? "正在发起电话").font(.subheadline).foregroundStyle(teal)
+                Text(phone.current?.stateLabel ?? "正在发起电话").font(.subheadline).foregroundStyle(brandAccent)
                 Text(phone.current?.number.isEmpty == false ? phone.current!.number : phone.number)
                     .font(.system(size: 30, weight: .medium, design: .rounded)).minimumScaleFactor(0.6).lineLimit(1)
                 Label(phone.microphoneConnected ? "音频已连接" : "正在连接音频", systemImage: "waveform").font(.caption).foregroundStyle(.secondary)
@@ -194,7 +194,7 @@ struct ContentView: View {
             if phone.current?.isIncoming == true {
                 Button { Task { await phone.answer() } } label: {
                     Label("接听", systemImage: "phone.fill").font(.headline).frame(maxWidth: .infinity, minHeight: 52)
-                }.buttonStyle(.borderedProminent).tint(teal)
+                }.buttonStyle(.borderedProminent).tint(brandAccent)
             } else {
                 HStack(spacing: 8) {
                     callAction(phone.muted ? "取消静音" : "静音", symbol: phone.muted ? "mic.slash.fill" : "mic.fill", active: phone.muted, compact: compact && showKeypad) { phone.toggleMute() }
@@ -213,7 +213,7 @@ struct ContentView: View {
         Button(action: action) {
             VStack(spacing: 6) { Image(systemName: symbol).font(.title3); Text(title).font(.caption) }
                 .frame(maxWidth: .infinity, minHeight: compact ? 50 : 64)
-                .background(active ? teal.opacity(0.15) : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                .background(active ? brandAccent.opacity(0.15) : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         }.foregroundStyle(.primary)
     }
     private func keypad(inCall: Bool, compact: Bool) -> some View {
@@ -237,12 +237,12 @@ struct ContentView: View {
     private var messageCard: some View {
         Button(action: openMessages) {
             HStack(spacing: 12) {
-                Image(systemName: "bubble.left.and.bubble.right.fill").font(.title3).foregroundStyle(teal)
-                    .frame(width: 40, height: 40).background(teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                Image(systemName: "bubble.left.and.bubble.right.fill").font(.title3).foregroundStyle(brandAccent)
+                    .frame(width: 40, height: 40).background(brandAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 5) {
                     HStack {
                         Text("短信与模块").font(.subheadline.weight(.semibold)); Spacer()
-                        if dashboard.unreadCount > 0 { Text("\(dashboard.unreadCount) 条新短信").font(.caption.weight(.semibold)).foregroundStyle(teal) }
+                        if dashboard.unreadCount > 0 { Text("\(dashboard.unreadCount) 条新短信").font(.caption.weight(.semibold)).foregroundStyle(brandAccent) }
                         else if dashboard.loaded { Text("\(dashboard.messages.count) 条").font(.caption).foregroundStyle(.secondary) }
                     }
                     Text(messageSummary).font(.caption).foregroundStyle(.secondary).lineLimit(1)

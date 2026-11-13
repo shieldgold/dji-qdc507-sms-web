@@ -11,8 +11,8 @@ settings:
     SWIFT_VERSION: '5.0'
     DEVELOPMENT_TEAM: JM394W6UR5
     CODE_SIGN_STYLE: Automatic
-    MARKETING_VERSION: 0.3.0
-    CURRENT_PROJECT_VERSION: 3
+    MARKETING_VERSION: 0.3.1
+    CURRENT_PROJECT_VERSION: 4
 targets:
   ModulePhone:
     type: application
@@ -27,7 +27,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: '1,2'
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: 模块电话
+        INFOPLIST_KEY_CFBundleDisplayName: 小电波
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: 通过 USB 或局域网连接你的 4G 模块，读取短信并进行通话。
         INFOPLIST_KEY_NSMicrophoneUsageDescription: 将你的声音传送给连接的 4G 模块，用于电话通话。
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
