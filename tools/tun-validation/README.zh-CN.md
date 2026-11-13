@@ -40,6 +40,8 @@ GCC 4.9.3 构建阶段曾只读核对模块 misc 设备号、配置摘要和 TUN
 
 13 项源码缺口和全部配置差异已记录在 `result.json`，校验器会拒绝名单之外的配置变化。旁证 SDK 定位了其中 12 项的定义和使用处；随后从原厂内核定位了 `CONFIG_QRAWDATA` 的 procfs/MTD 实现，并核对共享文件操作表布局，见 [QRAWDATA ABI 专项分析](QRAWDATA_ABI_ANALYSIS.zh-CN.md)。原始源码仍未找到，不把静态分析扩展为整个厂商内核 ABI 的完整保证。
 
+后续设备测试的日志、分阶段验收、恢复和清理步骤见 [受控临时加载方案](TEMP_LOAD_TEST_PLAN.zh-CN.md) 与 [运行记录模板](TEMP_LOAD_RUN_RECORD.template.md)。目前只准备方案，实时执行/采集通道和测试器仍需在电脑上准备并验收，未实际上传或加载。
+
 ## 固定输入
 
 - [Quectel 源码提交](https://github.com/the-modem-distro/quectel_eg25_kernel/tree/82ed00908b3e8efc3ff0de27d2b5a7c0524ecd7f)：`82ed00908b3e8efc3ff0de27d2b5a7c0524ecd7f`。
