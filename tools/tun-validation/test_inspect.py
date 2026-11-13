@@ -1,12 +1,12 @@
 import struct
 import unittest
 
-from inspect_tun import Elf32, exported_symbols, compare_modules, config_values, config_differences
+from inspect_tun import Elf32, exported_symbols, compare_modules, config_values, config_differences, compiler_versions
 
 
 def elf_fixture(vermagic="3.18.44 preempt mod_unload ARMv7 p2v8 ", module_size=328,
-                imports=("misc_register",)):
-    names = ["", ".shstrtab", ".modinfo", ".gnu.linkonce.this_module", ".strtab", ".symtab"]
+                imports=("misc_register",), compiler="GCC: (GNU) 4.9.3"):
+    names = ["", ".shstrtab", ".modinfo", ".gnu.linkonce.this_module", ".strtab", ".symtab", ".comment"]
     shstr = b"\0"
     name_offsets = []
     for name in names:
@@ -18,7 +18,7 @@ def elf_fixture(vermagic="3.18.44 preempt mod_unload ARMv7 p2v8 ", module_size=3
         symbols += struct.pack("<IIIBBH", len(strings), 0, 0, 0x10, 0, 0)
         strings += name.encode() + b"\0"
     payloads = [b"", shstr, b"vermagic=" + vermagic.encode() + b"\0",
-                bytes(module_size), strings, symbols]
+                bytes(module_size), strings, symbols, compiler.encode() + b"\0"]
     content = bytearray(52)
     sections = []
     for index, data in enumerate(payloads):
@@ -102,6 +102,22 @@ class InspectionTests(unittest.TestCase):
         struct.pack_into("<I", candidate, 36, 0x5000400)
         result = compare_modules(Elf32(bytes(candidate)), Elf32(elf_fixture()), {"misc_register"})
         self.assertIn("ARM ELF ABI flags mismatch", result["errors"])
+
+    def test_compiler_version_is_distinct_from_vendor_branding(self):
+        self.assertEqual(compiler_versions(["GCC: (GNU) 4.9.3"]), ["4.9.3"])
+        self.assertEqual(compiler_versions(["GCC: (Ubuntu/Linaro 4.9.3-13ubuntu2) 4.9.3"]), ["4.9.3"])
+        self.assertEqual(compiler_versions(["GCC: (Linaro) 4.9.4 20151028 (prerelease)"]), ["4.9.4"])
+
+    def test_equal_version_does_not_mean_identical_vendor_toolchain(self):
+        candidate = Elf32(elf_fixture(compiler="GCC: (Ubuntu/Linaro 4.9.3-13ubuntu2) 4.9.3"))
+        result = compare_modules(candidate, Elf32(elf_fixture()), {"misc_register"})
+        self.assertTrue(result["compiler_version_matches"])
+        self.assertFalse(result["compiler_identical"])
+
+    def test_prerelease_is_not_accepted_as_matching_final_compiler(self):
+        candidate = Elf32(elf_fixture(compiler="GCC: (Linaro) 4.9.3 20150413 (prerelease)"))
+        result = compare_modules(candidate, Elf32(elf_fixture()), {"misc_register"})
+        self.assertFalse(result["compiler_version_matches"])
 
 
 if __name__ == "__main__":

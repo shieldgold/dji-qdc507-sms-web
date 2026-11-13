@@ -115,14 +115,22 @@
   "missing_exports": [],
   "weak_imports": [],
   "candidate_compiler": [
-    "GCC: (Linaro GCC 4.9-2016.02) 4.9.4 20151028 (prerelease)"
+    "GCC: (Ubuntu/Linaro 4.9.3-13ubuntu2) 4.9.3"
   ],
   "vendor_compiler": [
     "GCC: (GNU) 4.9.3"
   ],
+  "candidate_compiler_versions": [
+    "4.9.3"
+  ],
+  "vendor_compiler_versions": [
+    "4.9.3"
+  ],
+  "candidate_compiler_is_prerelease": false,
+  "compiler_version_matches": true,
   "compiler_identical": false,
-  "candidate_sha256": "94eff0f57e4f773ea08d47ed912580fdeb8d595d259e035c878d6ee746537c77",
-  "candidate_bytes": 26736,
+  "candidate_sha256": "2b44764dc5bee73faab5671bc5575cb08cb08c8cb68854fb8ef1a85b5ca8637d",
+  "candidate_bytes": 26664,
   "config_differences": [
     {
       "key": "CONFIG_QL_LPM",
@@ -201,7 +209,7 @@
   "limitations": [
     "No module upload, load, TUN creation, packet transfer or stability test was performed.",
     "Matching vermagic, module size and export names do not prove every vendor structure layout.",
-    "The compiler differs from the original vendor compiler.",
+    "GCC versions match, but the vendor compiler build and downstream patches are not identical or fully known.",
     "The public source lacks 13 captured Quectel-private configuration options."
   ]
 }

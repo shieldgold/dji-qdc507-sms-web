@@ -1,0 +1,553 @@
+{
+  "all_private_restorations_identical": true,
+  "baseline_matches_kbuild_object": true,
+  "limitations": [
+    "A macro differential cannot reconstruct private code absent from the candidate source.",
+    "The separate EC20 SDK is not established as the exact QDC507 firmware source."
+  ],
+  "private_config_values": {
+    "CONFIG_QL_LPM": "m",
+    "CONFIG_QRAWDATA": "y",
+    "CONFIG_QSMD": "n",
+    "CONFIG_QSMEM": "n",
+    "CONFIG_QSTART": "y",
+    "CONFIG_QTZONE": "n",
+    "CONFIG_QUECTEL_AUDIO_DRIVER": "y",
+    "CONFIG_QUECTEL_DRIVER": "y",
+    "CONFIG_QUECTEL_MODEM_BOOT_TIME": "y",
+    "CONFIG_QUECTEL_MODEM_RESTART_LEVEL": "y",
+    "CONFIG_QUECTEL_PCM16K_SUPPORT": "y",
+    "CONFIG_QUECTEL_POWER_DRIVER": "y",
+    "CONFIG_QUECTEL_POWER_MANAGER": "y"
+  },
+  "runtime_verified": false,
+  "scope": "The compiled public 3.18.44 candidate and a separate EC20 SDK used only as source evidence",
+  "sdk_commit": "dcd4977901517beb21973c520727b34fcc44a15a",
+  "sdk_kernel_version": "3.18.20",
+  "sdk_network_or_include_references": [],
+  "sdk_references": {
+    "CONFIG_QL_LPM": [
+      {
+        "line": 27,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "config QL_LPM"
+      },
+      {
+        "line": 9,
+        "path": "drivers/quectel-drivers/Makefile",
+        "text": "obj-$(CONFIG_QL_LPM)\t+= ql_lpm/"
+      },
+      {
+        "line": 6,
+        "path": "drivers/quectel-drivers/ql_lpm/Makefile",
+        "text": "obj-$(CONFIG_QL_LPM)\t+= ql_lpm.o"
+      }
+    ],
+    "CONFIG_QRAWDATA": [],
+    "CONFIG_QSMD": [
+      {
+        "line": 45,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "config QSMD"
+      },
+      {
+        "line": 46,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "bool \"QSMD\""
+      },
+      {
+        "line": 11,
+        "path": "drivers/quectel-drivers/Makefile",
+        "text": "obj-$(CONFIG_QSMD)\t+= qsmd/"
+      },
+      {
+        "line": 5,
+        "path": "drivers/quectel-drivers/qsmd/Makefile",
+        "text": "obj-$(CONFIG_QSMD)\t+= qsmd.o"
+      }
+    ],
+    "CONFIG_QSMEM": [
+      {
+        "line": 51,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "config QSMEM"
+      },
+      {
+        "line": 52,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "bool \"QSMEM\""
+      },
+      {
+        "line": 12,
+        "path": "drivers/quectel-drivers/Makefile",
+        "text": "obj-$(CONFIG_QSMEM)\t+= qsmem/"
+      },
+      {
+        "line": 5,
+        "path": "drivers/quectel-drivers/qsmem/Makefile",
+        "text": "obj-$(CONFIG_QSMEM)\t+= qsmem.o"
+      },
+      {
+        "line": 93,
+        "path": "drivers/quectel-drivers/qsmem/qsmem.c",
+        "text": "printk(\"[Max][SMEM][%s][%d] CHECK QSMEM ADDR FAILED!\\n\", __func__, __LINE__); \\"
+      },
+      {
+        "line": 102,
+        "path": "drivers/quectel-drivers/qsmem/qsmem.c",
+        "text": "printk(\"[Max][SMEM][%s][%d] CHECK QSMEM ADDR FAILED!\\n\", __func__, __LINE__); \\"
+      }
+    ],
+    "CONFIG_QSTART": [
+      {
+        "line": 39,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "config QSTART"
+      },
+      {
+        "line": 40,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "bool \"QSTART\""
+      },
+      {
+        "line": 13,
+        "path": "drivers/quectel-drivers/Makefile",
+        "text": "obj-$(CONFIG_QSTART)\t+= qstart/"
+      },
+      {
+        "line": 5,
+        "path": "drivers/quectel-drivers/qstart/Makefile",
+        "text": "obj-$(CONFIG_QSTART)\t+= qstart.o"
+      }
+    ],
+    "CONFIG_QTZONE": [
+      {
+        "line": 33,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "config QTZONE"
+      },
+      {
+        "line": 10,
+        "path": "drivers/quectel-drivers/Makefile",
+        "text": "obj-$(CONFIG_QTZONE)\t+= qtzone/"
+      },
+      {
+        "line": 5,
+        "path": "drivers/quectel-drivers/qtzone/Makefile",
+        "text": "obj-$(CONFIG_QTZONE)\t+= ql_tzone.o"
+      }
+    ],
+    "CONFIG_QUECTEL_AUDIO_DRIVER": [
+      {
+        "line": 9,
+        "path": "qconfig/Kconfig",
+        "text": "config QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 912,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1296,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1303,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1692,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifndef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1740,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifndef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1760,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifndef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1852,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifndef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1874,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifndef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1969,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 1998,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 2377,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 2492,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 717,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 2202,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 2633,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#endif /* CONFIG_QUECTEL_AUDIO_DRIVER */"
+      },
+      {
+        "line": 2856,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 135,
+        "path": "sound/soc/msm/qdsp6v2/q6afe.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      },
+      {
+        "line": 197,
+        "path": "sound/soc/msm/qdsp6v2/q6afe.c",
+        "text": "#ifdef CONFIG_QUECTEL_AUDIO_DRIVER"
+      }
+    ],
+    "CONFIG_QUECTEL_DRIVER": [
+      {
+        "line": 178,
+        "path": "drivers/Makefile",
+        "text": "obj-$(CONFIG_QUECTEL_DRIVER)    +=quectel-drivers/"
+      },
+      {
+        "line": 7,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "config QUECTEL_DRIVER"
+      },
+      {
+        "line": 13,
+        "path": "drivers/quectel-drivers/Kconfig",
+        "text": "if QUECTEL_DRIVER"
+      }
+    ],
+    "CONFIG_QUECTEL_MODEM_BOOT_TIME": [
+      {
+        "line": 981,
+        "path": "init/main.c",
+        "text": "#ifdef CONFIG_QUECTEL_MODEM_BOOT_TIME"
+      },
+      {
+        "line": 1017,
+        "path": "init/main.c",
+        "text": "#ifdef CONFIG_QUECTEL_MODEM_BOOT_TIME //jun20160728"
+      },
+      {
+        "line": 21,
+        "path": "qconfig/Kconfig",
+        "text": "config QUECTEL_MODEM_BOOT_TIME"
+      }
+    ],
+    "CONFIG_QUECTEL_MODEM_RESTART_LEVEL": [
+      {
+        "line": 200,
+        "path": "drivers/soc/qcom/subsystem_restart.c",
+        "text": "#ifdef CONFIG_QUECTEL_MODEM_RESTART_LEVEL  //jun20160728 subsystem restart config"
+      },
+      {
+        "line": 434,
+        "path": "drivers/soc/qcom/subsystem_restart.c",
+        "text": "#ifdef CONFIG_QUECTEL_MODEM_RESTART_LEVEL  // Ramos 20160623 add  for modem subsystem restart config"
+      },
+      {
+        "line": 469,
+        "path": "drivers/soc/qcom/subsystem_restart.c",
+        "text": "#ifdef CONFIG_QUECTEL_MODEM_RESTART_LEVEL\t//jun20160728 subsystem restart config"
+      },
+      {
+        "line": 1658,
+        "path": "drivers/soc/qcom/subsystem_restart.c",
+        "text": "#ifdef CONFIG_QUECTEL_MODEM_RESTART_LEVEL  // Ramos 20160623 add  for modem subsystem restart config"
+      },
+      {
+        "line": 17,
+        "path": "qconfig/Kconfig",
+        "text": "config QUECTEL_MODEM_RESTART_LEVEL"
+      }
+    ],
+    "CONFIG_QUECTEL_PCM16K_SUPPORT": [
+      {
+        "line": 25,
+        "path": "qconfig/Kconfig",
+        "text": "config QUECTEL_PCM16K_SUPPORT"
+      },
+      {
+        "line": 1306,
+        "path": "sound/soc/codecs/alc5616.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT\t//for pcm 16k , pll value is diff"
+      },
+      {
+        "line": 2118,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT\t//add attribe, for usespace change pcm sync"
+      },
+      {
+        "line": 2147,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT\t//add attribe, for usespace change pcm sync"
+      },
+      {
+        "line": 2155,
+        "path": "sound/soc/msm/mdm9607.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT\t//add attribe, for usespace change pcm sync"
+      },
+      {
+        "line": 2230,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT"
+      },
+      {
+        "line": 2269,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT"
+      },
+      {
+        "line": 2308,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT"
+      },
+      {
+        "line": 2346,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT"
+      },
+      {
+        "line": 2385,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT"
+      },
+      {
+        "line": 2424,
+        "path": "sound/soc/msm/qdsp6v2/msm-dai-q6-v2.c",
+        "text": "#ifdef CONFIG_QUECTEL_PCM16K_SUPPORT"
+      }
+    ],
+    "CONFIG_QUECTEL_POWER_DRIVER": [
+      {
+        "line": 502,
+        "path": "drivers/power/reset/msm-poweroff.c",
+        "text": "#ifdef CONFIG_QUECTEL_POWER_DRIVER"
+      },
+      {
+        "line": 553,
+        "path": "drivers/power/reset/msm-poweroff.c",
+        "text": "#ifdef CONFIG_QUECTEL_POWER_DRIVER"
+      },
+      {
+        "line": 13,
+        "path": "qconfig/Kconfig",
+        "text": "config QUECTEL_POWER_DRIVER"
+      }
+    ],
+    "CONFIG_QUECTEL_POWER_MANAGER": [
+      {
+        "line": 576,
+        "path": "drivers/misc/Kconfig",
+        "text": "config QUECTEL_POWER_MANAGER"
+      },
+      {
+        "line": 72,
+        "path": "drivers/misc/Makefile",
+        "text": "obj-$(CONFIG_QUECTEL_POWER_MANAGER)\t+= quectel_power_manager.o"
+      }
+    ]
+  },
+  "source_unresolved_keys": [
+    "CONFIG_QRAWDATA"
+  ],
+  "target_vendor_patch_identity_verified": false,
+  "tun_dependency_file_count": 515,
+  "tun_dependency_private_references": [],
+  "variants": [
+    {
+      "name": "baseline",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {}
+    },
+    {
+      "name": "CONFIG_QL_LPM",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QL_LPM": "m"
+      }
+    },
+    {
+      "name": "CONFIG_QRAWDATA",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QRAWDATA": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QSMD",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QSMD": "n"
+      }
+    },
+    {
+      "name": "CONFIG_QSMEM",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QSMEM": "n"
+      }
+    },
+    {
+      "name": "CONFIG_QSTART",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QSTART": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QTZONE",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QTZONE": "n"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_AUDIO_DRIVER",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_AUDIO_DRIVER": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_DRIVER",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_DRIVER": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_MODEM_BOOT_TIME",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_MODEM_BOOT_TIME": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_MODEM_RESTART_LEVEL",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_MODEM_RESTART_LEVEL": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_PCM16K_SUPPORT",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_PCM16K_SUPPORT": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_POWER_DRIVER",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_POWER_DRIVER": "y"
+      }
+    },
+    {
+      "name": "CONFIG_QUECTEL_POWER_MANAGER",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QUECTEL_POWER_MANAGER": "y"
+      }
+    },
+    {
+      "name": "all_private",
+      "object_identical_to_baseline": true,
+      "object_sha256": "a8d8e428ee171dcd449614ce28b157ea6fcd904d16df4a2602e21a95e1366abf",
+      "preprocessed_identical_to_baseline": true,
+      "preprocessed_sha256": "a24abf207d197a37ffd08e883492da839090c5169ac2d53c40a19b8e43f07495",
+      "values": {
+        "CONFIG_QL_LPM": "m",
+        "CONFIG_QRAWDATA": "y",
+        "CONFIG_QSMD": "n",
+        "CONFIG_QSMEM": "n",
+        "CONFIG_QSTART": "y",
+        "CONFIG_QTZONE": "n",
+        "CONFIG_QUECTEL_AUDIO_DRIVER": "y",
+        "CONFIG_QUECTEL_DRIVER": "y",
+        "CONFIG_QUECTEL_MODEM_BOOT_TIME": "y",
+        "CONFIG_QUECTEL_MODEM_RESTART_LEVEL": "y",
+        "CONFIG_QUECTEL_PCM16K_SUPPORT": "y",
+        "CONFIG_QUECTEL_POWER_DRIVER": "y",
+        "CONFIG_QUECTEL_POWER_MANAGER": "y"
+      }
+    }
+  ]
+}

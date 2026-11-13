@@ -14,8 +14,13 @@ docker run --rm --network none --platform linux/amd64 \
     -v "$LOCAL_DIR:/work" \
     -v "$LOCAL_DIR/capture:/work/capture:ro" \
     -v "$LOCAL_DIR/inspection:/work/inspection:ro" \
-    -v "$LOCAL_DIR/sources:/work/sources:ro" qdc507-tun-builder:local sh -ec '
-    CROSS=/work/sources/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-
+    -v "$LOCAL_DIR/sources:/work/sources:ro" qdc507-tun-gcc493:local sh -ec '
+    CROSS=/opt/gcc493/bin/arm-linux-gnueabi-
+    test "$("${CROSS}gcc" -dumpversion)" = 4.9.3
+    if "${CROSS}gcc" --version | grep -q prerelease; then
+        echo "A final GCC 4.9.3 release is required" >&2
+        exit 1
+    fi
     mkdir -p /work/build /work/output
     gzip -dc /work/capture/config.gz > /work/build/.config
     /work/sources/quectel-kernel/scripts/config --file /work/build/.config --module TUN

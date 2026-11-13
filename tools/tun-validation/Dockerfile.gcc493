@@ -1,0 +1,14 @@
+FROM qdc507-tun-builder:local
+COPY *.deb SHA256SUMS /tmp/gcc493-debs/
+RUN cd /tmp/gcc493-debs && sha256sum -c SHA256SUMS \
+ && mkdir -p /opt/gcc493/bin && for f in /tmp/gcc493-debs/*.deb; do dpkg-deb -x "$f" /opt/gcc493; done \
+ && printf '%s\n' '#!/bin/sh' 'exec /opt/gcc493/usr/bin/arm-linux-gnueabi-gcc-4.9 -B/usr/arm-linux-gnueabi/bin/ "$@"' > /opt/gcc493/bin/arm-linux-gnueabi-gcc \
+ && chmod +x /opt/gcc493/bin/arm-linux-gnueabi-gcc \
+ && for x in as ld nm objcopy objdump readelf strip; do ln -s /usr/bin/arm-linux-gnueabi-$x /opt/gcc493/bin/arm-linux-gnueabi-$x; done \
+ && cd / && rm -rf /tmp/gcc493-debs
+ENV LD_LIBRARY_PATH=/opt/gcc493/usr/lib/x86_64-linux-gnu
+RUN /opt/gcc493/bin/arm-linux-gnueabi-gcc --version \
+ && test "$(/opt/gcc493/bin/arm-linux-gnueabi-gcc -dumpversion)" = 4.9.3 \
+ && printf '%s\n' 'int qdc507_compiler_probe;' | /opt/gcc493/bin/arm-linux-gnueabi-gcc -x c -c -o /tmp/arm-probe.o - \
+ && /usr/bin/arm-linux-gnueabi-readelf -h /tmp/arm-probe.o | grep 'Machine:.*ARM' \
+ && rm /tmp/arm-probe.o

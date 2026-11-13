@@ -159,6 +159,11 @@ def exported_symbols(image, base, minimum_run=512):
     return result
 
 
+def compiler_versions(identities):
+    return sorted({match.group(1) for text in identities
+                   if (match := re.search(r"\)\s+(\d+\.\d+\.\d+)\b", text))})
+
+
 def compare_modules(candidate, vendor, exports):
     errors = []
     if candidate.flags != vendor.flags:
@@ -176,13 +181,22 @@ def compare_modules(candidate, vendor, exports):
     compiler_section = ".comment"
     compiler = sorted(set(candidate.sections.get(compiler_section, {}).get("data", b"").split(b"\0")) - {b""})
     vendor_compiler = sorted(set(vendor.sections.get(compiler_section, {}).get("data", b"").split(b"\0")) - {b""})
+    compiler = [value.decode("ascii") for value in compiler]
+    vendor_compiler = [value.decode("ascii") for value in vendor_compiler]
+    versions = compiler_versions(compiler)
+    vendor_versions = compiler_versions(vendor_compiler)
+    prerelease = any("prerelease" in text.lower() for text in compiler)
     return {"errors": errors, "vermagic": candidate.info["vermagic"][0],
             "arm_elf_flags": hex(candidate.flags),
             "struct_module_bytes": candidate_size, "vendor_struct_module_bytes": vendor_size,
             "required_imports": sorted(candidate.imports), "missing_exports": missing,
             "weak_imports": sorted(candidate.weak_imports),
-            "candidate_compiler": [value.decode("ascii") for value in compiler],
-            "vendor_compiler": [value.decode("ascii") for value in vendor_compiler],
+            "candidate_compiler": compiler,
+            "vendor_compiler": vendor_compiler,
+            "candidate_compiler_versions": versions,
+            "vendor_compiler_versions": vendor_versions,
+            "candidate_compiler_is_prerelease": prerelease,
+            "compiler_version_matches": bool(versions) and versions == vendor_versions and not prerelease,
             "compiler_identical": bool(compiler and vendor_compiler) and compiler == vendor_compiler,
             "runtime_verified": False}
 
@@ -240,8 +254,10 @@ def main():
             "No module upload, load, TUN creation, packet transfer or stability test was performed.",
             "Matching vermagic, module size and export names do not prove every vendor structure layout.",
         ]
-        if not result["compiler_identical"]:
+        if not result["compiler_version_matches"]:
             result["limitations"].append("The compiler differs from the original vendor compiler.")
+        elif not result["compiler_identical"]:
+            result["limitations"].append("GCC versions match, but the vendor compiler build and downstream patches are not identical or fully known.")
         if any(item["key"] in PRIVATE_SOURCE_GAPS for item in result.get("config_differences", [])):
             result["limitations"].append("The public source lacks 13 captured Quectel-private configuration options.")
     (args.output / "inspection.json").write_text(json.dumps(result, indent=2) + "\n")
