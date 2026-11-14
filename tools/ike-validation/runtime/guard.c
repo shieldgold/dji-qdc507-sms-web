@@ -5,8 +5,11 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <limits.h>
 #include <net/if.h>
+#include <net/route.h>
 #include <poll.h>
 #include <sched.h>
 #include <signal.h>
@@ -31,6 +34,8 @@ static uint64_t log_seq;
 static int log_seen;
 static size_t log_bytes;
 static long daemon_peak, cli_peak, min_available = LONG_MAX;
+static char cli_text[65536];
+static size_t cli_used;
 
 static double monotonic(void) {
     struct timespec t;
@@ -191,9 +196,16 @@ static int stop_child(volatile sig_atomic_t *slot) {
     }
     printf("RECOVERY_REQUIRED unreaped_child=%ld\n", (long)*slot); return -1;
 }
-static int spawn(const char *root, int daemon, const char *arg) {
+static void capture_cli(const char *buf, size_t n) {
+    if (n > sizeof(cli_text)-1-cli_used) n = sizeof(cli_text)-1-cli_used;
+    memcpy(cli_text+cli_used, buf, n); cli_used += n; cli_text[cli_used] = 0;
+}
+static int spawnv(const char *root, int daemon, const char *const *args, int timeout) {
     char path[256];
-    snprintf(path, sizeof(path), "%s/%s", root, daemon ? "charon" : "swanctl");
+    if (daemon == 2) snprintf(path, sizeof(path), "/bin/busybox");
+    else snprintf(path, sizeof(path), "%s/%s", root, daemon ? "charon" : "swanctl");
+    int is_daemon = daemon == 1;
+    if (!is_daemon) { cli_used = 0; cli_text[0] = 0; }
     int pipefd[2];
     if (pipe2(pipefd, O_CLOEXEC)) return -1;
     pid_t parent = getpid(), pid = fork();
@@ -207,19 +219,21 @@ static int spawn(const char *root, int daemon, const char *arg) {
         int nullfd = open("/dev/null", O_RDONLY);
         if (nullfd < 0 || dup2(nullfd, STDIN_FILENO) < 0) _exit(125);
         if (nullfd > 2) close(nullfd);
-        if (daemon) execl(path, path, (char *)NULL);
-        else execl(path, path, arg, (char *)NULL);
+        const char *argv[20]; size_t n = 1; argv[0] = path;
+        if (args) for (size_t i = 0; args[i] && n < 19; i++) argv[n++] = args[i];
+        argv[n] = NULL;
+        execv(path, (char *const *)argv);
         perror("exec"); _exit(127);
     }
     close(pipefd[1]);
     /* stdout pipe is replaced only after the previous child output was drained. */
-    if (daemon) daemon_pid = pid; else cli_pid = pid;
+    if (is_daemon) daemon_pid = pid; else cli_pid = pid;
     struct proc_id id;
     if (!proc_identity(pid, &id)) {
-        printf("OWNED label=%s pid=%ld start=%llu expected_exe=%s\n", daemon ? "charon" : "cli", (long)pid, id.start, path);
-        if (state_fd >= 0) dprintf(state_fd, "%s %ld %llu %s\n", daemon ? "charon" : "cli", (long)pid, id.start, path);
+        printf("OWNED label=%s pid=%ld start=%llu expected_exe=%s\n", is_daemon ? "charon" : "cli", (long)pid, id.start, path);
+        if (state_fd >= 0) dprintf(state_fd, "%s %ld %llu %s\n", is_daemon ? "charon" : "cli", (long)pid, id.start, path);
     }
-    if (daemon) {
+    if (is_daemon) {
         output_fd = pipefd[0];
         if (fcntl(output_fd, F_SETFL, O_NONBLOCK)) return -1;
         return 0;
@@ -227,16 +241,16 @@ static int spawn(const char *root, int daemon, const char *arg) {
     /* VICI writes use a distinct bounded pipe, drained alongside daemon logs. */
     int cli_fd = pipefd[0];
     if (fcntl(cli_fd, F_SETFL, O_NONBLOCK)) { close(cli_fd); return -1; }
-    double until = monotonic() + 5; int status = 0, result = -1;
+    double until = monotonic() + timeout; int status = 0, result = -1;
     while (monotonic() < until) {
         char buf[4097]; ssize_t n = read(cli_fd, buf, sizeof(buf)-1);
-        if (n > 0) { buf[n] = 0; printf("VICI %s", buf); log_bytes += (size_t)n; }
+        if (n > 0) { buf[n] = 0; capture_cli(buf, (size_t)n); printf("VICI %s", buf); log_bytes += (size_t)n; }
         if (n < 0 && errno != EAGAIN && errno != EINTR) break;
         if (log_bytes > 1048576 || tick()) break;
         if (reap(&cli_pid, &status, WNOHANG) > 0) {
             /* Drain final data after exit as well. */
             while ((n = read(cli_fd, buf, sizeof(buf)-1)) > 0) {
-                buf[n] = 0; printf("VICI %s", buf); log_bytes += (size_t)n;
+                buf[n] = 0; capture_cli(buf, (size_t)n); printf("VICI %s", buf); log_bytes += (size_t)n;
                 if (log_bytes > 1048576) break;
             }
             result = WIFEXITED(status) && !WEXITSTATUS(status) && log_bytes <= 1048576 ? 0 : -1;
@@ -245,7 +259,103 @@ static int spawn(const char *root, int daemon, const char *arg) {
     }
     if (cli_pid > 0) stop_child(&cli_pid);
     close(cli_fd);
-    printf("VICI_EXIT command=%s success=%d\n", arg, result == 0); return result;
+    printf("VICI_EXIT command=%s success=%d\n", args ? args[0] : "charon", result == 0); return result;
+}
+static int spawn(const char *root, int daemon, const char *arg) {
+    const char *args[] = {arg, NULL};
+    return spawnv(root, daemon, arg ? args : NULL, 5);
+}
+static int ipv4(const char *s) {
+    struct in_addr ip;
+    if (inet_pton(AF_INET, s, &ip) != 1) return 0;
+    unsigned long n = ntohl(ip.s_addr);
+    return (n >> 24) && (n >> 24) != 127 && (n >> 24) < 224;
+}
+static int has_vip(const char *vip, int must_be_tun) {
+    struct ifaddrs *list;
+    if (getifaddrs(&list)) return -1;
+    struct in_addr expected; inet_pton(AF_INET, vip, &expected);
+    int found = 0;
+    for (struct ifaddrs *p = list; p; p = p->ifa_next) {
+        if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET &&
+            ((struct sockaddr_in *)p->ifa_addr)->sin_addr.s_addr == expected.s_addr &&
+            (!must_be_tun || !strcmp(p->ifa_name, "ipsec0"))) found++;
+    }
+    freeifaddrs(list); return found;
+}
+/* kernel-libipsec owns a selector route independently of install_routes=no.
+ * Accept exactly the requested /32 on the newly created interface, no wider TS.
+ */
+static int owned_target_route(const char *target) {
+    FILE *f = fopen("/proc/net/route", "r");
+    if (!f) return 0;
+    struct in_addr ip; inet_pton(AF_INET, target, &ip);
+    char line[512]; int found = 0, bad = 0;
+    while (fgets(line, sizeof(line), f)) {
+        char name[64]; unsigned long dest, gateway, flags, ref, use, metric, mask;
+        if (sscanf(line, "%63s %lx %lx %lx %lu %lu %lu %lx", name, &dest, &gateway, &flags, &ref, &use, &metric, &mask) == 8 && !strcmp(name, "ipsec0")) {
+            printf("OWNED_ROUTE %s", line);
+            if (dest == ip.s_addr && mask == 0xffffffffUL && !gateway && (flags & RTF_UP)) found++;
+            else bad++;
+        }
+    }
+    fclose(f); return found == 1 && !bad;
+}
+static int target_unrouted(const char *target) {
+    FILE *f = fopen("/proc/net/route", "r");
+    if (!f) return 0;
+    struct in_addr ip; inet_pton(AF_INET, target, &ip);
+    char line[512]; int safe = 1;
+    while (fgets(line, sizeof(line), f)) {
+        char name[64]; unsigned long dest, gateway, flags, ref, use, metric, mask;
+        if (sscanf(line, "%63s %lx %lx %lx %lu %lu %lu %lx", name, &dest, &gateway, &flags, &ref, &use, &metric, &mask) == 8 &&
+            mask && (flags & RTF_UP) && (ip.s_addr & mask) == dest) safe = 0;
+    }
+    fclose(f); return safe;
+}
+static int ike_ports_free(void) {
+    const char *files[] = {"/proc/net/udp", "/proc/net/udp6"};
+    for (size_t i = 0; i < 2; i++) {
+        FILE *f = fopen(files[i], "r");
+        if (!f) return 0;
+        char line[512], address[80];
+        while (fgets(line, sizeof(line), f)) if (sscanf(line, " %*u: %79s", address) == 1) {
+            char *colon = strrchr(address, ':');
+            if (colon) {
+                unsigned long port = strtoul(colon+1, NULL, 16);
+                if (port == 500 || port == 4500) { fclose(f); return 0; }
+            }
+        }
+        fclose(f);
+    }
+    return 1;
+}
+static const char *cred_dirs[] = {"swanctl", "swanctl/private", "swanctl/x509", "swanctl/x509ca"};
+static const char *cred_files[] = {"client.key", "client.pem", "ca.pem", "swanctl.conf"};
+static const char *cred_dest[] = {"swanctl/private/client.key", "swanctl/x509/client.pem", "swanctl/x509ca/ca.pem", "swanctl/swanctl.conf"};
+static int credentials(const char *root, int create) {
+    char src[256], dst[256]; int failed = 0;
+    if (create) {
+        for (size_t i = 0; i < 4; i++) {
+            snprintf(dst, sizeof(dst), "/run/qdc-ike/%s", cred_dirs[i]);
+            if (mkdir(dst, 0700)) return -1;
+        }
+        for (size_t i = 0; i < 4; i++) {
+            snprintf(src, sizeof(src), "%s/%s", root, cred_files[i]);
+            snprintf(dst, sizeof(dst), "/run/qdc-ike/%s", cred_dest[i]);
+            if (link(src, dst)) return -1;
+        }
+    } else {
+        for (size_t i = 0; i < 4; i++) {
+            snprintf(dst, sizeof(dst), "/run/qdc-ike/%s", cred_dest[i]);
+            if (unlink(dst) && errno != ENOENT) failed = 1;
+        }
+        for (int i = 3; i >= 0; i--) {
+            snprintf(dst, sizeof(dst), "/run/qdc-ike/%s", cred_dirs[i]);
+            if (rmdir(dst) && errno != ENOENT) failed = 1;
+        }
+    }
+    return failed ? -1 : 0;
 }
 static int create_runtime(const char *token) {
     if (mkdir("/run/qdc-ike", 0700)) return -1;
@@ -267,7 +377,7 @@ static int cleanup_runtime(const char *token) {
     if (unexpected || unlink("/run/qdc-ike/.owner") || rmdir("/run/qdc-ike")) return -1;
     return 0;
 }
-static int idle(const char *root, const char *token, int seconds) {
+static int idle(const char *root, const char *token, int seconds, const char *target, const char *vip) {
     char path[256], before[128], after[128]; struct stat st; struct rlimit limit;
     if (geteuid() || !trusted_root(root)) return 65;
     for (int i = 0; i < 3; i++) {
@@ -275,6 +385,14 @@ static int idle(const char *root, const char *token, int seconds) {
         if (!trusted_file(path, i < 2)) return 65;
     }
     if (!lstat("/run/qdc-ike", &st) || errno != ENOENT) return 65;
+    if (target) {
+        if (if_nametoindex("ipsec0") || has_vip(vip, 0) != 0 || !target_unrouted(target) || !ike_ports_free()) return 65;
+        for (size_t i = 0; i < 4; i++) {
+            snprintf(path, sizeof(path), "%s/%s", root, i < 3 ? cred_files[i] : "swanctl.conf");
+            if (!trusted_file(path, 0)) return 65;
+            if (i == 0 && (lstat(path, &st) || (st.st_mode & 0077))) return 65;
+        }
+    }
     char device[64];
     if (read_complete("/sys/class/misc/tun/dev", device, sizeof(device)) < 1 || strcmp(device, "10:200\n") ||
         lstat("/dev/net/tun", &st) || !S_ISCHR(st.st_mode) || st.st_uid ||
@@ -293,17 +411,24 @@ static int idle(const char *root, const char *token, int seconds) {
         puts("PREFLIGHT_MEMORY_REFUSED after_GO=1"); close(kmsg_fd); return 87;
     }
     signal(SIGALRM, hard_deadline); alarm((unsigned)(seconds + 20));
-    int rc = 1, created = 0, ns_entered = 0;
+    int rc = 1, created = 0, ns_entered = 0, creds_started = 0;
     snprintf(path, sizeof(path), "%s/%s.state", root, token);
     state_fd = open(path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600);
     struct proc_id self;
     if (state_fd < 0 || proc_identity(getpid(), &self)) goto done;
     dprintf(state_fd, "guard %ld %llu %s\n", (long)getpid(), self.start, self.exe);
-    if (ns_name(before, sizeof(before)) || unshare(CLONE_NEWNET) || ns_name(after, sizeof(after)) || !strcmp(before, after)) goto done;
-    ns_entered = 1;
-    printf("NETNS original=%s private=%s\n", before, after);
-    if (interfaces(0) || create_runtime(token)) goto done;
+    if (!target) {
+        if (ns_name(before, sizeof(before)) || unshare(CLONE_NEWNET) || ns_name(after, sizeof(after)) || !strcmp(before, after)) goto done;
+        ns_entered = 1;
+        printf("NETNS original=%s private=%s\n", before, after);
+        if (interfaces(0)) goto done;
+    }
+    if (create_runtime(token)) goto done;
     created = 1;
+    if (target) {
+        creds_started = 1;
+        if (credentials(root, 1) || setenv("SWANCTL_DIR", "/run/qdc-ike/swanctl", 1)) goto done;
+    }
     snprintf(path, sizeof(path), "%s/strongswan.conf", root);
     if (setenv("STRONGSWAN_CONF", path, 1) || spawn(root, 1, NULL)) goto done;
     double until = monotonic()+8; int status;
@@ -312,8 +437,32 @@ static int idle(const char *root, const char *token, int seconds) {
         if (reap(&daemon_pid, &status, WNOHANG) > 0) { puts("STOP charon_early_exit"); goto done; }
         if (!lstat("/run/qdc-ike/charon.vici", &st) && S_ISSOCK(st.st_mode)) break;
     }
-    if (lstat("/run/qdc-ike/charon.vici", &st) || !S_ISSOCK(st.st_mode) || interfaces(1) ||
+    if (lstat("/run/qdc-ike/charon.vici", &st) || !S_ISSOCK(st.st_mode) ||
+        (target ? !if_nametoindex("ipsec0") : interfaces(1)) ||
         spawn(root, 0, "--stats") || spawn(root, 0, "--list-conns") || spawn(root, 0, "--list-sas")) goto done;
+    if (target) {
+        snprintf(path, sizeof(path), "/run/qdc-ike/swanctl/swanctl.conf");
+        const char *load[] = {"--load-all", "--noprompt", "--file", path, NULL};
+        const char *init[] = {"--initiate", "--child", "qdc-test", "--timeout", "15", NULL};
+        const char *ping[] = {"ping", "-c", "5", "-W", "1", "-s", "128", "-I", vip, target, NULL};
+        const char *rekey[] = {"--rekey", "--child", "qdc-test", NULL};
+        const char *term[] = {"--terminate", "--ike", "qdc-test", "--timeout", "5", NULL};
+        if (spawnv(root, 0, load, 6) || spawnv(root, 0, init, 17) || spawn(root, 0, "--list-sas") ||
+            !strstr(cli_text, "ESTABLISHED") || !strstr(cli_text, "INSTALLED") || has_vip(vip, 1) != 1) {
+            puts("STOP connection_or_expected_virtual_ip_missing"); goto done;
+        }
+        if (!owned_target_route(target)) { puts("STOP target_route_refused"); goto done; }
+        printf("CONNECTED expected_vip=%s target=%s route_prefix=32\n", vip, target);
+        if (spawnv(root, 2, ping, 11) || !strstr(cli_text, "5 packets received") ||
+            spawn(root, 0, "--list-sas") || spawnv(root, 0, rekey, 8)) goto done;
+        until = monotonic()+2;
+        while (monotonic() < until) if (tick()) goto done;
+        if (spawn(root, 0, "--list-sas") || !strstr(cli_text, "ESTABLISHED") || !strstr(cli_text, "INSTALLED") ||
+            spawnv(root, 2, ping, 11) || !strstr(cli_text, "5 packets received") ||
+            spawn(root, 0, "--list-sas") || spawnv(root, 0, term, 7)) goto done;
+        puts("PROTECTED_TRAFFIC_COMPLETE ping_pairs=10 rekey_requested=1");
+        rc = 0; goto done;
+    }
     puts("IDLE_READY no_connections_configured=1");
     until = monotonic()+seconds;
     while (monotonic() < until) {
@@ -333,6 +482,8 @@ done:
     if (drain()) rc = 1;
     if (output_fd >= 0) { close(output_fd); output_fd = -1; }
     if (ns_entered && interfaces(0)) { puts("RECOVERY_REQUIRED tun_interface_retained"); rc = 1; }
+    if (target && (if_nametoindex("ipsec0") || has_vip(vip, 0) != 0 || !target_unrouted(target))) { puts("RECOVERY_REQUIRED tun_or_virtual_ip_or_route_retained"); rc = 1; }
+    if (creds_started && credentials(root, 0)) { puts("RECOVERY_REQUIRED credentials_retained"); rc = 1; }
     if (created && cleanup_runtime(token)) { puts("RECOVERY_REQUIRED runtime_directory_retained"); rc = 1; }
     double post = monotonic()+2;
     while (monotonic() < post) {
@@ -341,20 +492,32 @@ done:
     }
     alarm(0); close(kmsg_fd); if (state_fd >= 0) close(state_fd);
     printf("MEMORY_SUMMARY charon_peak_kib=%ld cli_peak_kib=%ld min_available_kib=%ld smaps_read_to_eof=1\n", daemon_peak, cli_peak, min_available);
-    printf("IDLE_COMPLETE rc=%d children_reaped=1\n", rc);
+    printf("%s_COMPLETE rc=%d children_reaped=1\n", target ? "CONNECT" : "IDLE", rc);
     return rc;
 }
-static int resume(pid_t pid, unsigned long long start, int seconds) {
+static int resume(pid_t pid, unsigned long long start, int seconds, int restore_clock) {
     if (geteuid() || !supervisor_matches(pid, start)) return 65;
+    struct timespec original, began, now;
+    if (restore_clock && (clock_gettime(CLOCK_REALTIME, &original) || clock_gettime(CLOCK_MONOTONIC, &began))) return 65;
     signal(SIGHUP, SIG_IGN); signal(SIGPIPE, SIG_IGN);
-    printf("RESUME_GUARD_READY pid=%ld supervisor=%ld start=%llu seconds=%d\n", (long)getpid(), (long)pid, start, seconds);
+    printf("RESUME_GUARD_READY pid=%ld supervisor=%ld start=%llu seconds=%d restore_clock=%d\n", (long)getpid(), (long)pid, start, seconds, restore_clock);
     double until = monotonic()+seconds;
     while (!interrupted && monotonic() < until) {
         struct timespec d = {0, 100000000}; nanosleep(&d, NULL);
     }
+    int rc = 0;
+    if (restore_clock) {
+        if (clock_gettime(CLOCK_MONOTONIC, &now)) return 1;
+        original.tv_sec += now.tv_sec-began.tv_sec;
+        original.tv_nsec += now.tv_nsec-began.tv_nsec;
+        if (original.tv_nsec < 0) { original.tv_nsec += 1000000000L; original.tv_sec--; }
+        if (original.tv_nsec >= 1000000000L) { original.tv_nsec -= 1000000000L; original.tv_sec++; }
+        if (clock_settime(CLOCK_REALTIME, &original)) { perror("RECOVERY_REQUIRED clock_restore"); rc = 1; }
+        else printf("CLOCK_RESTORED epoch=%lld before_supervisor_cont=1\n", (long long)original.tv_sec);
+    }
     if (!supervisor_matches(pid, start)) { puts("RESUME_REFUSED identity_changed"); return 1; }
     if (kill(pid, SIGCONT)) return 1;
-    puts("RESUME_SENT verify_sms_health_separately=1"); return 0;
+    puts("RESUME_SENT verify_sms_health_separately=1"); return rc;
 }
 int main(int argc, char **argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -380,13 +543,18 @@ int main(int argc, char **argv) {
     if (argc == 5 && !strcmp(argv[1], "idle")) {
         unsigned long long seconds = number(argv[4]);
         if (!identifier(argv[3]) || !seconds || seconds > 60) return 64;
-        return idle(argv[2], argv[3], (int)seconds);
+        return idle(argv[2], argv[3], (int)seconds, NULL, NULL);
     }
-    if (argc == 5 && !strcmp(argv[1], "resume")) {
+    if (argc == 7 && !strcmp(argv[1], "connect")) {
+        unsigned long long seconds = number(argv[4]);
+        if (!identifier(argv[3]) || !seconds || seconds > 60 || !ipv4(argv[5]) || !ipv4(argv[6]) || !strcmp(argv[5], argv[6])) return 64;
+        return idle(argv[2], argv[3], (int)seconds, argv[5], argv[6]);
+    }
+    if (argc == 5 && (!strcmp(argv[1], "resume") || !strcmp(argv[1], "resume-clock"))) {
         unsigned long long pid = number(argv[2]), start = number(argv[3]), seconds = number(argv[4]);
         if (!pid || pid > INT_MAX || !start || !seconds || seconds > 300) return 64;
-        return resume((pid_t)pid, start, (int)seconds);
+        return resume((pid_t)pid, start, (int)seconds, !strcmp(argv[1], "resume-clock"));
     }
-    fputs("usage: qdc-ike-guard selftest | describe PID | identity PID START EXE | idle RAM_ROOT TOKEN 1..60 | resume SUP_PID START 1..300\n", stderr);
+    fputs("usage: qdc-ike-guard selftest | describe PID | identity PID START EXE | idle RAM_ROOT TOKEN 1..60 | resume[-clock] SUP_PID START 1..300\n", stderr);
     return 64;
 }

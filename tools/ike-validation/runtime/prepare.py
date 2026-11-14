@@ -78,7 +78,7 @@ RAM_CHECK = """awk '$2=="/run" && $3=="tmpfs" && $4 ~ /(^|,)rw(,|$)/ && $4 !~ /(
 """
 
 
-def build_bundle(sources, expected, destination, run):
+def build_bundle(sources, expected, destination, run, connect=None):
     run = checked_id(run)
     checked_id(run+'_UNLOAD')
     if set(sources) != {'charon', 'swanctl', 'tun.ko', 'qdc-tun-probe', 'qdc-ike-guard'} or set(expected) != set(sources):
@@ -98,6 +98,9 @@ def build_bundle(sources, expected, destination, run):
     manifest = {'schema': 1, 'run_id': run, 'device_executed': False, 'ram_root': root,
                 'scope': 'idle only; no peers/credentials/routes/DNS/boot persistence',
                 'artifacts': {}, 'stages': []}
+    if connect:
+        manifest['scope'] = 'temporary certificate test; one ipsec0, expected VIP and target /32; no default route/DNS/boot changes'
+        manifest['connection'] = {k: connect[k] for k in ('target', 'vip')}
     owned = ['RUN_ID']
 
     def card(name, op='shell', seconds=30, **fields):
@@ -119,7 +122,9 @@ def build_bundle(sources, expected, destination, run):
     items = {'qdc-ike-guard': blobs['qdc-ike-guard'],
              'qdc-tun-probe': blobs['qdc-tun-probe'],
              **{n: b for n, b in blobs.items() if n not in ('qdc-ike-guard', 'qdc-tun-probe')},
-             'strongswan.conf': (HERE/'idle.conf').read_bytes()}
+             'strongswan.conf': (HERE/('real.conf' if connect else 'idle.conf')).read_bytes()}
+    if connect:
+        items.update(connect['files'])
     for index, (name, blob) in enumerate(items.items()):
         parts = []
         for number, part in enumerate(split_blob(blob)):
@@ -137,7 +142,7 @@ def build_bundle(sources, expected, destination, run):
         assembly += f'cat {" ".join(map(shlex.quote, parts))} > {shlex.quote(name+".new")}\n'
         assembly += f"printf '%s\\n' '{digest}  {name}.new' | sha256sum -c -\n"
         assembly += f'mv {shlex.quote(name+".new")} {shlex.quote(name)}\n'
-        assembly += f'chmod {"0400" if name in ("tun.ko", "strongswan.conf") else "0500"} {shlex.quote(name)}\n'
+        assembly += f'chmod {"0500" if name in ("charon", "swanctl", "qdc-ike-guard", "qdc-tun-probe") else "0400"} {shlex.quote(name)}\n'
         assembly += f'rm {" ".join(map(shlex.quote, parts))}\n'
         shell(f'21-{index}-assemble', assembly)
         owned.extend([name, name+'.new'])
@@ -157,16 +162,23 @@ def build_bundle(sources, expected, destination, run):
     shell('30-load-tun', f'{root}/qdc-tun-probe watch {token} 10 5 /sbin/insmod {root}/tun.ko',
           seconds=30, ready='LOGGER_READY '+token)
     shell('31-check-tun', 'set -eu\ncat /proc/modules\ncat /sys/class/misc/tun/dev\nls -ld /dev/net /dev/net/tun\ncat /proc/meminfo\n')
-    for stage, duration in [('40-idle-10s', 10), ('41-idle-60s', 60)]:
+    for stage, duration in ([] if connect else [('40-idle-10s', 10), ('41-idle-60s', 60)]):
         token = run+('_SMOKE' if duration == 10 else '_IDLE')
         shell(stage, f'{root}/qdc-ike-guard idle {root} {token} {duration}', seconds=90,
               ready='LOGGER_READY '+token)
+        owned.append(token+'.state')
+    if connect:
+        token = run+'_CONNECT'
+        shell('40-connect', f'{root}/qdc-ike-guard connect {root} {token} 60 {connect["target"]} {connect["vip"]}',
+              seconds=90, ready='LOGGER_READY '+token)
         owned.append(token+'.state')
     token = run+'_UNLOAD'
     shell('80-unload-tun', f'set -eu\ntest "$(cat /sys/module/tun/refcnt)" = 0\n'
           f'test ! -e /run/qdc-ike\n{root}/qdc-tun-probe watch {token} 10 5 /sbin/rmmod tun',
           seconds=30, ready='LOGGER_READY '+token)
     release = [p for p in owned if p.startswith(('charon', 'swanctl', 'tun.ko', 'strongswan.conf'))]
+    if connect:
+        release += [p for p in owned if p.startswith(('client.key', 'client.pem', 'ca.pem'))]
     shell('85-release-client-files', 'set -eu\n'+RAM_CHECK+f'test ! -L {root}\ncd {root}\n'
           f'test "$(cat RUN_ID)" = {shlex.quote(run)}\ntest ! -e /sys/module/tun\ntest ! -e /run/qdc-ike\n'
           +'rm -f '+' '.join(map(shlex.quote, release))+'\ncat /proc/meminfo\n')
@@ -190,10 +202,16 @@ def build_bundle(sources, expected, destination, run):
     manifest['manual_gates'] = ['authorization', 'fresh USB/kernel/HTTP baseline', 'physical recovery availability',
         'SMS guard and exact process identities if pausing', 'one card at a time; no replay',
         'normal driver unload before deleting files', 'owned /dev/net/tun cleanup if mdev leaves it']
+    if connect:
+        manifest['manual_gates'] += ['server endpoint matches enterprise peer local-address',
+            'clock-restoring SMS guardian ready before service pause',
+            'clock restore before SMS CONT; no permanent time or RTC change',
+            'real-connect runbook and ARM VM acceptance reviewed']
     write_private(destination/'manifest.json', (json.dumps(manifest, indent=2, ensure_ascii=False)+'\n').encode())
     write_private(destination/'READ-ME-FIRST.txt',
-        ('仅电脑准备，未执行。不要把 cards 目录批量发送给控制器。\n'
-         '先阅读仓库 TEMP_RUNTIME_TEST_PLAN.zh-CN.md。先授权实测，再逐项发送单张请求卡并审阅结果。\n'
+        ('仅电脑准备，未执行。不要把 cards 目录批量发送给控制器。\n'+
+         ('先阅读仓库 REAL_CONNECT_PLAN.zh-CN.md。\n' if connect else '先阅读仓库 TEMP_RUNTIME_TEST_PLAN.zh-CN.md。\n')+
+         '先授权实测，再逐项发送单张请求卡并审阅结果。\n'
          '按 manifest.stages 顺序逐项核对：每个 20-i 分片组完成后执行对应 21-i 合并卡，再进入下一组。\n'
          '短信暂停/恢复、异常处理和字符节点清理有人工核验门槛，不能靠最后一张卡替代。\n').encode())
     return manifest

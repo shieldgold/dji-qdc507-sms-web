@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "device": "BAIWANG EG25G-QDC507",
+  "kernel": "3.18.44",
+  "device_executed": true,
+  "status": "certificate_tunnel_accepted_with_mac_udp_relay",
+  "not_accepted": [
+    "4g_direct_underlay",
+    "sms_and_vpn_coexistence",
+    "long_running_load",
+    "production_time_synchronization",
+    "general_intranet_or_public_egress"
+  ],
+  "persistent_module_install": false,
+  "flash_or_autostart": false,
+  "tested_guard_sha256": "e3c8198385bb5384d34bdbccb5a4f0dc46ae662a5ade2abde33227a1f474a88f",
+  "runs": [
+    {
+      "id": "IKE20261114B01",
+      "server_udp_endpoint": "10.10.40.1",
+      "status": "auth_failed_wrong_local_endpoint",
+      "stages": 42,
+      "failed_stages": [
+        "40-connect"
+      ],
+      "usb_transfers": 3785,
+      "usb_errors": 0,
+      "short_usb_writes": 0,
+      "charon_peak_rss_kib": 1436,
+      "helper_cli_peak_rss_kib": 552,
+      "min_memavailable_kib": 9500,
+      "configured_network_and_firewall_unchanged": true,
+      "mdns_ipv6_cache_expired": true,
+      "cleanup_verified": true,
+      "clock_restored_before_sms_continue": true,
+      "boot_id": "0d8f027b-94e0-4bb5-bd2f-df52ac937d78",
+      "taint_before_and_after": 4608,
+      "local_log_dir": "runtime-logs/IKE20261114B01",
+      "evidence_sha256": {
+        "40-connect.raw": "9388443fdd6d34887057952ffaf0588e25a6cd05f633eaaa4b88a14e1c809563",
+        "events.jsonl": "c2480ee50506fa66e09e51d02425cc4b2e5a12d1809c86267c8bba41d2616de4",
+        "usb-transfers.jsonl": "30d8db21c0a2671e5bd6adb5b9851d0b1e2547883e862692d6dec66366ed3f0b",
+        "udp-relay.jsonl": "f67c5fce3e4bb358b568bca7795cd6474921a2ca8b8d9e05ff9a8e796b441bc0",
+        "87-clock-and-sms-restore.raw": "d9c2dc1e83d99116c66c4d2173ee6845e0245942ff6c3aa9bb0d2d31c2ce0167",
+        "88-network-process-node-proof.raw": "44a31bd13a0c0a783fb0c8b34b6a62244f7d3e6e5596ec868f51f356a837a14e",
+        "98-final-cleanup-proof.raw": "33e3a4762bcbcae86b7c15ea70867be8a3e4b063312541154b3a84176d4cfd83"
+      }
+    },
+    {
+      "id": "IKE20261114B02",
+      "server_udp_endpoint": "183.251.103.88",
+      "status": "accepted",
+      "stages": 42,
+      "failed_stages": [],
+      "usb_transfers": 3918,
+      "usb_errors": 0,
+      "short_usb_writes": 0,
+      "charon_peak_rss_kib": 1496,
+      "helper_cli_peak_rss_kib": 668,
+      "min_memavailable_kib": 9428,
+      "configured_network_and_firewall_unchanged": true,
+      "mdns_ipv6_cache_expired": false,
+      "cleanup_verified": true,
+      "clock_restored_before_sms_continue": true,
+      "boot_id": "0d8f027b-94e0-4bb5-bd2f-df52ac937d78",
+      "taint_before_and_after": 4608,
+      "local_log_dir": "runtime-logs/IKE20261114B02",
+      "evidence_sha256": {
+        "40-connect.raw": "aeb67aac92562a5f7d3f2e7037d846030cef178705fab3d4d75fdd1cb1ea1299",
+        "events.jsonl": "5a9bf824e45684772b6a1b82a6391cae09d43fdf56772df05b4591e6f3033490",
+        "usb-transfers.jsonl": "3008562644ef18b9ba0469f064051713e4e22b5c028dce0a8b8402a476d4039c",
+        "udp-relay.jsonl": "c23b691753dcb695e67fc81f067410ec17fb8a0bf25d42d3e7559ebe0a0b468e",
+        "87-clock-and-sms-restore.raw": "d46974503a7e4e3c31f032e4ccb9ffcc7c4967ec2557b38fd6df7cbcc807642b",
+        "88-network-process-node-proof.raw": "9818764b6327d13dc27ea935b06de14fb9e94dda89aa85ec8608ab394dce037a",
+        "98-final-cleanup-proof.raw": "f0a7e857b63897484ed9a3e22d2dc0363e83e130fe5dac4dba1439c652566a1f",
+        "routeros-active-peer.log": "4e9ee01bd9ea86c584c6f00c41e4d451f2c8894edfd2d2f88479695536d5efb1",
+        "routeros-auth.log": "92dcb8300b21e7ad9b55d20302719133c5f5006a330f643ae3a165ca8bfdcf3b"
+      }
+    }
+  ],
+  "certificate": {
+    "name": "enterprise-QDC507-Test-20261114",
+    "sha256": "87B9A263FD26FC2EFB51BF2C59FCF76D173C85235DAC3CA6784A37D5B23A1A1E",
+    "expiry_utc": "2026-11-21T04:05:39Z",
+    "server_test_identity_retained": true,
+    "private_key_in_git": false,
+    "private_key_on_module_after_test": false
+  },
+  "connection": {
+    "vip": "10.77.77.39",
+    "remote_target": "10.10.40.1/32",
+    "ike": "AES256-CBC/HMAC-SHA256/PRF-SHA256/MODP2048",
+    "esp": "AES256-CBC/HMAC-SHA256",
+    "pfs": false,
+    "icmp_pairs": 10,
+    "icmp_data_bytes_each": 128,
+    "child_rekey_confirmed": true,
+    "old_child_spi_in_out": [
+      "8a070230",
+      "272ba23d"
+    ],
+    "new_child_spi_in_out": [
+      "75865abe",
+      "f5545879"
+    ],
+    "packet_counters_each_child_each_direction": 5,
+    "byte_counters_each_child_each_direction": 780,
+    "routeros_peer": "enterprise-peer",
+    "routeros_active_peer_after_test": 0,
+    "routeros_icmp_allow_packets": 10,
+    "routeros_archive_commit": "02f24b8"
+  }
+}

@@ -35,6 +35,16 @@ class GuardTests(unittest.TestCase):
         self.assertIn(('pid='+str(os.getpid())).encode(), result.stdout)
         self.assertIn(b'start=', result.stdout)
 
+    def test_restore_clock_variant_has_a_separate_validated_cli(self):
+        result = self.run_guard('resume-clock', '1', '1', '2')
+        self.assertEqual(result.returncode, 65, 'valid resume-clock syntax must reach supervisor identity refusal')
+
+    def test_connect_rejects_invalid_targets_before_device_access(self):
+        for target, vip in [('127.0.0.1', '10.1.1.1'), ('10.1.1.1', '10.1.1.1'),
+                            ('224.1.1.1', '10.1.1.2'), ('x', '10.1.1.2')]:
+            self.assertEqual(self.run_guard('connect', '/tmp/x', 'TEST', '60', target, vip).returncode, 64)
+        self.assertEqual(self.run_guard('connect', '/tmp/x', 'TEST', '60', '10.2.2.1', '10.1.1.2').returncode, 65)
+
 
 if __name__ == '__main__':
     unittest.main()

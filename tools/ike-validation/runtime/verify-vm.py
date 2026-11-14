@@ -10,7 +10,8 @@ from prepare import PROBE_VM_CASES
 
 CASES = ['no_go', 'normal_cleanup', 'streamed_app_logs', 'early_exit_cleanup', 'kmsg_abort_cleanup',
          'cli_timeout_cleanup', 'runtime_memory_abort', 'blocked_output_deadline', 'low_memory_refusal',
-         'supervisor_auto_resume', 'supervisor_manual_resume', 'original_network_unchanged'] + sorted(PROBE_VM_CASES)
+         'supervisor_auto_resume', 'supervisor_manual_resume', 'supervisor_clock_auto_restore',
+         'supervisor_clock_manual_restore', 'original_network_unchanged'] + sorted(PROBE_VM_CASES)
 
 
 def accepted(text):

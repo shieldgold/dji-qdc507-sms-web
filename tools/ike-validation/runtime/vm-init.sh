@@ -160,6 +160,26 @@ wait "$guardpid"
 cat /run/resume-manual.log
 grep -q RESUME_SENT /run/resume-manual.log
 case "$(cat /proc/"$suppid"/stat)" in *') T '*) exit 2;; esac
+for mode in auto manual; do
+  date -u -s '@315532800'
+  ttl=3
+  test "$mode" != manual || ttl=60
+  qdc-ike-guard resume-clock "$suppid" "$start" "$ttl" > /run/clock-$mode.log 2>&1 &
+  guardpid=$!
+  sleep 1
+  grep -q 'restore_clock=1' /run/clock-$mode.log
+  kill -STOP "$suppid"
+  date -u -s '@1794630000'
+  test "$mode" != manual || kill -TERM "$guardpid"
+  wait "$guardpid"
+  cat /run/clock-$mode.log
+  now=$(date +%s)
+  test "$now" -ge 315532800
+  test "$now" -lt 315532815
+  awk '/CLOCK_RESTORED/ {restored=NR} /RESUME_SENT/ {resumed=NR} END {exit !(restored && resumed && restored < resumed)}' /run/clock-$mode.log
+  case "$(cat /proc/"$suppid"/stat)" in *') T '*) exit 2;; esac
+  echo CASE_PASS supervisor_clock_${mode}_restore
+done
 kill -TERM "$suppid"
 wait "$suppid" || true
 echo CASE_PASS supervisor_manual_resume
