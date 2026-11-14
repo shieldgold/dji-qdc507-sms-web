@@ -4,6 +4,8 @@
 
 随后获准单轮采用 11.5 MiB 上传门槛，[D03B 实机共存](COEXIST_TEST_2026-11-14_D03.zh-CN.md) 完成 9 组加密 ping 与短信网页检查，第 10 组触发原有 3 MiB 内存下降停止线。已恢复清理，尚未通过完整 30 秒资源余量验收。
 
+[E01 内存优化及实测](COEXIST_MEMORY_2026-11-14_E01.zh-CN.md) 将共存探测改为进程内执行、流式读取 smaps，ARM 对照 guard RSS 减少约 16 KiB、窗口探测子进程从 20 降至 0，27 项 ARM 场景通过。实机完成 6 组后仍触发原下降停止线（3088 KiB，允许 3072 KiB），已恢复清理；短信进程的分配增长仍需进一步验证，完整 30 秒验收未通过。
+
 当前产物为 strongSwan 6.1.0、静态 musl、GMP、用户态 IPsec 后端，ARMv7/EABI5/soft-float。依赖现有 `qdc507-tun-gcc493:local` 基础镜像、Docker、Python、QEMU。基础镜像的来源见 [TUN 构建记录](../tun-validation/README.zh-CN.md)。
 
 ```sh

@@ -43,13 +43,17 @@ static double now(void) {
     return value.tv_sec + value.tv_nsec/1e9;
 }
 
-static int ready(int fd, short events, double deadline) {
+static int ready(int fd, short events, double deadline, int (*pump)(void *), void *opaque, int *cancelled) {
     for (;;) {
+        if (pump && pump(opaque)) { *cancelled = 1; return -1; }
         double left = deadline - now();
         if (left <= 0 || left > 2.1) return -1;
         int ms = left > 0.1 ? 100 : (int)(left*1000) + 1;
         struct pollfd p = {fd, events, 0};
         int rc = poll(&p, 1, ms);
+        if (pump && pump(opaque)) { *cancelled = 1; return -1; }
+        double after = now();
+        if (after < 0 || after >= deadline) return -1;
         if (rc < 0 && errno == EINTR) continue;
         if (rc < 0 || (p.revents & POLLNVAL)) return -1;
         if (rc > 0 && (p.revents & (events | POLLERR | POLLHUP))) return 0;
@@ -108,13 +112,16 @@ static int headers(char *header, int *status, long *length) {
     return 0;
 }
 
-int qdc_http_once(const char *address) {
-    int fd = -1, status = 0, transport = 0, success = 0;
+int qdc_http_run(const char *address, int (*pump)(void *), void *opaque,
+                 struct qdc_http_result *result) {
+    int fd = -1, status = 0, transport = 0, success = 0, cancelled = 0;
     size_t body = 0;
+    if (!result) return 1;
     if (!qdc_http_local_address(address)) goto done;
     double deadline = now();
     if (deadline < 0) goto done;
     deadline += 2;
+    if (pump && pump(opaque)) { cancelled = 1; goto done; }
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0 || fcntl(fd, F_SETFD, FD_CLOEXEC) || fcntl(fd, F_SETFL, O_NONBLOCK)) goto done;
 #ifdef SO_NOSIGPIPE
@@ -126,7 +133,7 @@ int qdc_http_once(const char *address) {
     int rc = connect(fd, (struct sockaddr *)&endpoint, sizeof(endpoint));
     if (rc && errno != EINPROGRESS) goto done;
     if (rc) {
-        if (ready(fd, POLLOUT, deadline)) goto done;
+        if (ready(fd, POLLOUT, deadline, pump, opaque, &cancelled)) goto done;
         int error = 0; socklen_t size = sizeof(error);
         if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &size) || error) goto done;
     }
@@ -137,7 +144,7 @@ int qdc_http_once(const char *address) {
     if (request_len < 1 || request_len >= (int)sizeof(request)) goto done;
     size_t sent = 0;
     while (sent < (size_t)request_len) {
-        if (ready(fd, POLLOUT, deadline)) goto done;
+        if (ready(fd, POLLOUT, deadline, pump, opaque, &cancelled)) goto done;
         ssize_t n = send(fd, request+sent, (size_t)request_len-sent, MSG_NOSIGNAL);
         if (n < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) continue;
         if (n <= 0) goto done;
@@ -145,7 +152,7 @@ int qdc_http_once(const char *address) {
     }
     char buffer[HEADER_LIMIT+1]; size_t used = 0; int parsed = 0; long length = -1;
     for (;;) {
-        if (ready(fd, POLLIN, deadline)) goto done;
+        if (ready(fd, POLLIN, deadline, pump, opaque, &cancelled)) goto done;
         ssize_t n = recv(fd, buffer + (parsed ? 0 : used), parsed ? HEADER_LIMIT : HEADER_LIMIT-used, 0);
         if (n < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) continue;
         if (n < 0) goto done;
@@ -170,6 +177,17 @@ int qdc_http_once(const char *address) {
     }
 done:
     if (fd >= 0) close(fd);
-    printf("HTTP_PROBE status=%d transport=%d bytes=%zu\n", status, transport, body);
-    return success ? 0 : 1;
+    if (success) {
+        double finished = now();
+        if (finished < 0 || finished >= deadline) success = 0;
+    }
+    *result = (struct qdc_http_result){status, transport, body};
+    return cancelled ? QDC_HTTP_CANCELLED : success ? QDC_HTTP_OK : QDC_HTTP_FAILED;
+}
+
+int qdc_http_once(const char *address) {
+    struct qdc_http_result result;
+    int rc = qdc_http_run(address, NULL, NULL, &result);
+    printf("HTTP_PROBE status=%d transport=%d bytes=%zu\n", result.status, result.transport, result.body);
+    return rc;
 }

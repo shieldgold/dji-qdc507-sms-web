@@ -1,0 +1,235 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "run": "IKE20261114E01",
+  "status": "optimization_verified_but_original_memory_drop_stop_triggered",
+  "coexistence_accepted": false,
+  "guard": {
+    "sha256": "d35cb529a0ae5356feb7094e5d365686c71745d581029f9363205370480dac3d",
+    "bytes": 99692,
+    "optimizations": [
+      "no ping/HTTP fork during coexist window",
+      "512-byte streaming smaps with original EOF and input limit"
+    ],
+    "sms_binary_changed": false,
+    "charon_binary_or_threads_changed": false
+  },
+  "validation": {
+    "python_cpu_total": 51,
+    "python_cpu_passed": 50,
+    "python_cpu_skipped": 1,
+    "skip_reason": "existing live-executable cleanup check under amd64 binfmt interpreter",
+    "c_tests": [
+      "proc",
+      "proc smaps streaming",
+      "coexist control",
+      "ICMP packet and syscall harness"
+    ],
+    "arm_regression_cases_passed": 20,
+    "arm_coexist_cases_passed": 7,
+    "vm_paired_comparison": {
+      "before": {
+        "guard_rss_kib": [
+          168,
+          172
+        ],
+        "guard_anonymous_kib": [
+          72,
+          76
+        ],
+        "probe_child_launches": 20,
+        "http_ms": [],
+        "summary": [
+          "MEMORY_SUMMARY charon_peak_kib=1740 cli_peak_kib=844 min_available_kib=27828 smaps_read_to_eof=1"
+        ]
+      },
+      "after": {
+        "guard_rss_kib": [
+          152,
+          156
+        ],
+        "guard_anonymous_kib": [
+          52,
+          56
+        ],
+        "probe_child_launches": 0,
+        "http_ms": [
+          22.309,
+          25.307,
+          25.928,
+          26.063,
+          27.96,
+          25.665,
+          21.875,
+          26.552,
+          26.635,
+          25.7
+        ],
+        "summary": [
+          "MEMORY_SUMMARY charon_peak_kib=1736 cli_peak_kib=844 min_available_kib=28004 smaps_read_to_eof=1"
+        ]
+      }
+    }
+  },
+  "limits": {
+    "default_admission_kib": 12288,
+    "this_run_admission_kib": 11776,
+    "start_after_staging_kib": 8192,
+    "floor_kib": 6144,
+    "max_drop_kib": 3072,
+    "baseline_sampling_position_changed": false,
+    "coexist_seconds": 30,
+    "hard_deadline_seconds": 80,
+    "hard_kill_backup_seconds": 3,
+    "guardian_ttl_seconds": 300,
+    "guardian_max_start_age_seconds": 180
+  },
+  "physical": {
+    "admission_samples_kib": [
+      12052,
+      12040,
+      12040
+    ],
+    "guardian_ready_to_launch_host_seconds": 53.364,
+    "vpn_established": true,
+    "precheck_encrypted_ping_success": 5,
+    "completed_ping_http_pairs": 6,
+    "protected_icmp_success_in_window": 7,
+    "last_complete_pair_elapsed_seconds": 15.446,
+    "stop_elapsed": "about 18 seconds, seventh scheduled ICMP succeeded before initial HTTP monitoring callback stopped; STOP line has no independent timestamp",
+    "baseline_available_kib": 9760,
+    "minimum_available_kib": 6672,
+    "drop_kib": 3088,
+    "drop_excess_kib": 16,
+    "floor_breached": false,
+    "window_smaps": {
+      "guard": {
+        "samples": 17,
+        "rss_peak_kib": 152,
+        "pss_peak_kib": 148,
+        "anonymous_peak_kib": 56
+      },
+      "charon": {
+        "samples": 17,
+        "rss_peak_kib": 1460,
+        "pss_peak_kib": 1460,
+        "anonymous_peak_kib": 340
+      },
+      "smsweb": {
+        "samples": 17,
+        "rss_peak_kib": 7328,
+        "pss_peak_kib": 7328,
+        "anonymous_peak_kib": 3060
+      }
+    },
+    "all_native_smaps": {
+      "guard": {
+        "samples": 30,
+        "rss_peak_kib": 152,
+        "pss_peak_kib": 148,
+        "anonymous_peak_kib": 56
+      },
+      "charon": {
+        "samples": 29,
+        "rss_peak_kib": 1460,
+        "pss_peak_kib": 1460,
+        "anonymous_peak_kib": 340
+      },
+      "cli": {
+        "samples": 6,
+        "rss_peak_kib": 660,
+        "pss_peak_kib": 170,
+        "anonymous_peak_kib": 76
+      },
+      "smsweb": {
+        "samples": 18,
+        "rss_peak_kib": 7480,
+        "pss_peak_kib": 7480,
+        "anonymous_peak_kib": 3260
+      }
+    },
+    "post_cleanup_awk_sms_rss_kib": 7992,
+    "post_cleanup_awk_sms_anonymous_kib": 3660,
+    "post_cleanup_http_status": 200,
+    "same_sms_identity_after_cleanup": true,
+    "smaps_read_to_eof": true,
+    "children_reaped": true,
+    "charon_peak_including_rusage_kib": 1464,
+    "cli_peak_including_rusage_kib": 668,
+    "coexist_probe_child_launches": 0
+  },
+  "server": {
+    "counter_samples": 80,
+    "sample_errors": 0,
+    "active_test_seen": 1,
+    "identity_field": "id",
+    "icmp_before": 15,
+    "icmp_after": 27,
+    "in_ipsec_scope_rechecked": true,
+    "test_peer_absent_final": true,
+    "invalid_initial_query_excluded": "remote-id is not active-peers identity property; initial query returned full set, excluded and preserved separately"
+  },
+  "cleanup": {
+    "baseline": {
+      "final_checks": {
+        "boot_and_taint": true,
+        "kernel_config": true,
+        "dns": true,
+        "interfaces": true,
+        "addresses": true,
+        "routes": true,
+        "firewall_rules": true,
+        "modules": true
+      },
+      "initial_transient_route": "2620:149:149:1022::15 dev rmnet_data0 metric 0 appeared then disappeared without a route-write operation; treated as transient based on later fresh readback",
+      "final_source": "IKE20261114E01-verify/01-readonly-final.raw"
+    },
+    "tun_module_node_and_directory_absent": true,
+    "ipsec0_vip_target_route_runtime_absent": true,
+    "all_owned_files_and_processes_absent": true,
+    "original_supervisor_pid": 428,
+    "original_supervisor_start": 826,
+    "same_supervisor": true,
+    "sms_pid": 3895,
+    "sms_start": 2631939,
+    "sms_program_and_startup_sha_unchanged": true,
+    "sms_http": 200,
+    "sim_state": "READY",
+    "post_restore_log_seconds": 30,
+    "post_restore_log_passed": true,
+    "reboot_required": false,
+    "firmware_changed": false,
+    "autostart_changed": false,
+    "client_persistently_installed": false
+  },
+  "controllers": {
+    "IKE20261114E01": {
+      "usb_transfers": 4265,
+      "usb_errors": 0,
+      "usb_short_writes": 0,
+      "results": 47,
+      "closed": true
+    },
+    "IKE20261114E01-verify": {
+      "usb_transfers": 89,
+      "usb_errors": 0,
+      "usb_short_writes": 0,
+      "results": 2,
+      "closed": true
+    }
+  },
+  "source_analysis": {
+    "at_reader_synthetic_line_bytes": 258,
+    "host_benchmark_B_per_op": 34625,
+    "host_benchmark_allocs_per_op": 226,
+    "toolchain": "go1.25.6 darwin/arm64",
+    "source_binary_equivalence_not_proven": true,
+    "heap_profile_causality_not_proven": true,
+    "sms_reader_modified_or_deployed": false,
+    "gc_config_in_current_source": {
+      "percent": 20,
+      "soft_target_bytes": 12582912
+    }
+  },
+  "conclusion": "Guard RSS and probe process churn were reduced, but SMS process growth and system memory variation still cross the unchanged 3 MiB drop limit. Six full pairs are not a 30-second acceptance. SMS allocation profiling is the next priority."
+}

@@ -14,7 +14,7 @@ class HTTPProbeTests(unittest.TestCase):
         if not cls.probe:
             raise unittest.SkipTest('set QDC_HTTP_PROBE to the standalone probe test binary')
 
-    def request(self, response, *, delay=0, chunks=False):
+    def request(self, response, *, delay=0, chunks=False, mode=None):
         server = socket.socket()
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind(('127.0.0.1', 8787))
@@ -51,12 +51,15 @@ class HTTPProbeTests(unittest.TestCase):
         worker = threading.Thread(target=serve, daemon=True)
         worker.start()
         started = time.monotonic()
-        result = subprocess.run([self.probe, '127.0.0.1'], capture_output=True, timeout=4)
+        result = subprocess.run([self.probe, '127.0.0.1'] + ([mode] if mode else []), capture_output=True, timeout=4)
         elapsed = time.monotonic() - started
         worker.join(4)
         self.assertFalse(worker.is_alive())
         self.assertFalse(failures)
-        self.assertEqual(result.stderr, b'')
+        if mode:
+            self.assertRegex(result.stderr, rb'^PUMP calls=\d+ max_gap_ms=[0-9.]+\n$')
+        else:
+            self.assertEqual(result.stderr, b'')
         self.assertEqual(len(result.stdout.splitlines()), 1)
         self.assertRegex(result.stdout, rb'^HTTP_PROBE status=\d+ transport=[01] bytes=\d+\n$')
         self.assertEqual(received, [b'GET / HTTP/1.0\r\nHost: 127.0.0.1:8787\r\nConnection: close\r\n\r\n'])
@@ -121,6 +124,29 @@ class HTTPProbeTests(unittest.TestCase):
         self.assertGreater(elapsed, 1.7)
         self.assertLess(elapsed, 2.4)
         self.assertIn(b'transport=1', result.stdout)
+
+    def test_pump_continues_while_waiting_for_sms(self):
+        import re
+        result, _ = self.request(b'HTTP/1.0 200 OK\r\n\r\nok', delay=.55, mode='pump')
+        self.assertEqual(result.returncode, 0)
+        calls, max_gap = re.search(rb'calls=(\d+) max_gap_ms=([0-9.]+)', result.stderr).groups()
+        self.assertGreaterEqual(int(calls), 5)
+        self.assertLess(float(max_gap), 180)
+
+    def test_pump_abort_interrupts_network_wait(self):
+        result, elapsed = self.request(b'HTTP/1.0 200 OK\r\n\r\nok', delay=.55, mode='cancel')
+        self.assertEqual(result.returncode, 2)
+        self.assertGreater(elapsed, .15)
+        self.assertLess(elapsed, .5)
+
+    def test_initial_monitor_stop_is_distinct_from_retryable_refusal(self):
+        result = subprocess.run([self.probe, '127.0.0.1', 'cancel-first'], capture_output=True, timeout=1)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, b'HTTP_PROBE status=0 transport=0 bytes=0\n')
+
+    def test_pump_crossing_deadline_cannot_accept_eof_as_success(self):
+        result, _ = self.request(b'HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nok', mode='late-eof')
+        self.assertNotEqual(result.returncode, 0)
 
     def test_refused_port_reports_transport_failure(self):
         result = subprocess.run([self.probe, '127.0.0.1'], capture_output=True, timeout=3)

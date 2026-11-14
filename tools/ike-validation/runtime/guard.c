@@ -3,6 +3,7 @@
 #include "proc.h"
 #include "coexist.h"
 #include "http_probe.h"
+#include "icmp_probe.h"
 #include "../../tun-validation/runtime/log_watch.h"
 #include <dirent.h>
 #include <errno.h>
@@ -150,7 +151,7 @@ static int sample(pid_t pid, const char *label, long *peak) {
            label, (long)pid, sm.rss, sm.pss, sm.anonymous, sm.dirty);
     return 0;
 }
-static int tick(void) {
+static int tick_wait(int wait_ms) {
     if (interrupted || drain()) return -1;
     if (coexist.active && !qdc_coexist_alive(&coexist)) {
         puts("STOP sms_or_supervisor_identity_changed"); return -1;
@@ -170,9 +171,10 @@ static int tick(void) {
             (coexist.active && sample(coexist.sms.pid, "smsweb", &sms_peak))) return -1;
     }
     struct pollfd fds[2] = {{kmsg_fd, POLLIN, 0}, {output_fd, POLLIN, 0}};
-    int rc = poll(fds, output_fd >= 0 ? 2 : 1, 250);
+    int rc = poll(fds, output_fd >= 0 ? 2 : 1, wait_ms);
     return rc < 0 && errno != EINTR ? -1 : 0;
 }
+static int tick(void) { return tick_wait(250); }
 static pid_t reap(volatile sig_atomic_t *slot, int *status, int options) {
     sigset_t mask, old;
     sigemptyset(&mask); sigaddset(&mask, SIGALRM);
@@ -386,13 +388,26 @@ static int cleanup_runtime(const char *token) {
     if (unexpected || unlink("/run/qdc-ike/.owner") || rmdir("/run/qdc-ike")) return -1;
     return 0;
 }
-static int coexist_tick(void) {
+static int coexist_service(int wait_ms) {
     int status;
-    if (tick()) return -1;
+    if (tick_wait(wait_ms)) return -1;
     if (reap(&daemon_pid, &status, WNOHANG) > 0 || !daemon_pid) {
         puts("STOP charon_early_exit"); return -1;
     }
     return 0;
+}
+static int coexist_tick(void) { return coexist_service(250); }
+static int coexist_pump(void *unused) { (void)unused; return coexist_service(0); }
+static int post_pump(void *unused) { (void)unused; return tick_wait(0); }
+static int http_probe(int (*pump)(void *), struct qdc_http_result *result) {
+    double began = monotonic();
+    int rc = qdc_http_run(coexist.http, pump, NULL, result);
+    int n = printf("HTTP_PROBE status=%d transport=%d bytes=%zu duration_ms=%.3f\n",
+                   result->status, result->transport, result->body, (monotonic()-began)*1000);
+    if (n < 0) return -1;
+    log_bytes += (size_t)n;
+    if (log_bytes > 1048576) { puts("STOP log_budget"); return -1; }
+    return rc;
 }
 static int coexist_window(const char *root, const char *target, const char *vip) {
     char path[256]; struct stat st;
@@ -408,26 +423,27 @@ static int coexist_window(const char *root, const char *target, const char *vip)
         if (state == 1) { ready = 1; break; }
     }
     if (!ready) { puts("STOP sms_restore_timeout"); return -1; }
-    const char *http[] = {"http-once", coexist.http, NULL};
+    struct qdc_http_result http;
     int http_ready = 0;
     while (monotonic() < until) {
-        if (!spawnv(root, 3, http, 3) && strstr(cli_text, "HTTP_PROBE status=200 transport=1")) {
+        int http_rc = http_probe(coexist_pump, &http);
+        if (http_rc == QDC_HTTP_OK) {
             http_ready = 1; break;
         }
-        if (!strstr(cli_text, "transport=0")) break;
+        if (http_rc != QDC_HTTP_FAILED || http.transport) break;
         if (coexist_tick()) return -1;
     }
     if (!http_ready) { puts("STOP sms_http_startup"); return -1; }
     double began = monotonic();
     printf("COEXIST_READY seconds=30 sms_pid=%ld sms_start=%llu monotonic=%.3f\n", (long)coexist.sms.pid, coexist.sms.start, began);
-    const char *ping[] = {"ping", "-c", "1", "-W", "1", "-s", "128", "-I", vip, target, NULL};
     for (int pair = 0; pair < 10; pair++) {
         while (monotonic() < began+pair*3) if (coexist_tick()) return -1;
         if (!owned_target_route(target) || has_vip(vip, 1) != 1 ||
-            spawnv(root, 2, ping, 3) || !strstr(cli_text, "1 packets received")) {
+            qdc_icmp_once(vip, target, coexist_pump, NULL)) {
             puts("STOP coexist_protected_ping"); return -1;
         }
-        if (spawnv(root, 3, http, 3) || !strstr(cli_text, "HTTP_PROBE status=200 transport=1")) {
+        puts("ICMP_PROBE received=1 payload_bytes=128");
+        if (http_probe(coexist_pump, &http)) {
             puts("STOP coexist_sms_http"); return -1;
         }
         printf("COEXIST_PAIR index=%d ping=1 http_status=200 monotonic=%.3f\n", pair+1, monotonic());
@@ -560,9 +576,8 @@ done:
         struct timespec d = {0, 100000000}; nanosleep(&d, NULL);
     }
     if (with_sms && coexist.active) {
-        const char *http[] = {"http-once", coexist.http, NULL};
-        if (!qdc_coexist_alive(&coexist) || spawnv(root, 3, http, 3) ||
-            !strstr(cli_text, "HTTP_PROBE status=200 transport=1") || !qdc_coexist_alive(&coexist)) {
+        struct qdc_http_result http;
+        if (!qdc_coexist_alive(&coexist) || http_probe(post_pump, &http) || !qdc_coexist_alive(&coexist)) {
             puts("STOP post_cleanup_sms_health"); rc = 1;
         } else puts("COEXIST_POST_SMS_OK same_identity=1 http_status=200");
     }
