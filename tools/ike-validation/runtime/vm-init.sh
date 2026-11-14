@@ -20,6 +20,27 @@ chmod 400 "$root/strongswan.conf"
 ip addr show > /run/net-before
 cat /proc/sys/net/core/xfrm_acq_expires > /run/sysctl-before
 cat /proc/net/udp /proc/net/udp6 > /run/udp-before
+qdc-tun-probe-musl selftest
+echo CASE_PASS probe_selftest
+if qdc-tun-probe-musl watch VM_PROBE_NOGO 1 5 /bin/sh -c 'echo executed > /run/probe-executed' </dev/null > /run/probe-nogo.log 2>&1; then exit 2; fi
+cat /run/probe-nogo.log
+grep -q LOGGER_NOT_ARMED /run/probe-nogo.log
+test ! -e /run/probe-executed
+echo CASE_PASS probe_no_go
+printf 'GO\n' | qdc-tun-probe-musl watch VM_PROBE_LOG 1 5 /bin/sh -c 'echo executed > /run/probe-executed' > /run/probe-gate.log 2>&1
+cat /run/probe-gate.log
+test -e /run/probe-executed
+grep -q LOGGER_COMPLETE /run/probe-gate.log
+echo CASE_PASS probe_log_gate
+mknod /dev/qdc-tun-VM_PROBE c 10 200
+chmod 600 /dev/qdc-tun-VM_PROBE
+qdc-tun-probe-musl features /dev/qdc-tun-VM_PROBE
+echo CASE_PASS probe_features
+qdc-tun-probe-musl create /dev/qdc-tun-VM_PROBE VM_PROBE_CREATE
+echo CASE_PASS probe_create
+qdc-tun-probe-musl traffic /dev/qdc-tun-VM_PROBE VM_PROBE_TRAFFIC
+echo CASE_PASS probe_traffic
+rm /dev/qdc-tun-VM_PROBE
 qdc-ike-guard selftest
 if qdc-ike-guard idle "$root" VM_NOGO 1 </dev/null > /run/nogo.log 2>&1; then exit 2; fi
 cat /run/nogo.log

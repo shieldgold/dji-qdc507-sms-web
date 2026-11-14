@@ -6,10 +6,11 @@ import os
 from pathlib import Path
 import subprocess
 import time
+from prepare import PROBE_VM_CASES
 
 CASES = ['no_go', 'normal_cleanup', 'streamed_app_logs', 'early_exit_cleanup', 'kmsg_abort_cleanup',
          'cli_timeout_cleanup', 'runtime_memory_abort', 'blocked_output_deadline', 'low_memory_refusal',
-         'supervisor_auto_resume', 'supervisor_manual_resume', 'original_network_unchanged']
+         'supervisor_auto_resume', 'supervisor_manual_resume', 'original_network_unchanged'] + sorted(PROBE_VM_CASES)
 
 
 def accepted(text):
@@ -30,7 +31,7 @@ def main():
     logs = base/'logs'/f'runtime-tools-vm-{args.attempt}'
     logs.mkdir(mode=0o700, exist_ok=False)
     paths = [out/'lab-only-runtime-zImage', out/'lab-only-runtime-rootfs.cpio.gz',
-             out/'qdc-ike-guard', base/'output/charon', base/'output/swanctl']
+             out/'qdc-ike-guard', base/'output/charon', base/'output/swanctl', out/'qdc-tun-probe-musl']
     hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     (logs/'artifacts.json').write_text(json.dumps(hashes, indent=2)+'\n')
     cmd = ['qemu-system-arm', '-M', 'virt-5.2', '-cpu', 'cortex-a7', '-smp', '2', '-m', '48M',
@@ -64,6 +65,17 @@ def main():
                     proc.kill()
                     proc.wait()
             (logs/'acceptance.json').write_text(json.dumps(result, indent=2)+'\n')
+    digest = hashes[str(out/'qdc-tun-probe-musl')]
+    receipt = out/('compact-probe-'+digest+'.json')
+    proof = {'status': 'passed', 'probe_sha256': digest, 'cases': CASES,
+             'local_logs': str(logs.relative_to(base))}
+    if receipt.exists():
+        previous = json.loads(receipt.read_text())
+        if previous.get('status') != 'passed' or previous.get('probe_sha256') != digest or not PROBE_VM_CASES <= set(previous.get('cases', [])):
+            raise RuntimeError('existing compact probe receipt is inconsistent')
+    else:
+        with receipt.open('x') as stream:
+            json.dump(proof, stream, indent=2); stream.write('\n')
     print(json.dumps(result))
 
 

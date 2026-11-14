@@ -10,6 +10,8 @@ sh tools/ike-validation/runtime/build.sh /Users/shield/Documents/ChatGPT/DJI-4G/
 
 该脚本只运行无网络、无 USB 挂载的 Linux 容器和主机 Go CPU 测试。输出 ARM 静态 qdc-ike-guard、原 USB 控制器的相同实现和 build.json；不重编 tun.ko。新的 C 监督器复用已有的日志解析及 smaps 解析，原 USB 控制器、信号防护、1 MiB 传输上限均未改变。
 
+2026-11-14 起另输出同源码静态 musl qdc-tun-probe-musl（70940 字节），节省 454404 字节 RAM 暂存。它使用原 probe.c/packet.c/log_watch.c，不改变驱动或协议。当前 VM 用它再验证自检、无 GO 不执行、日志门控、features、创建、10 组双向小包；连同监督器既有 12 项场景共 18 项。prepare.py --compact-probe 必须读到摘要匹配的成功 VM 回执才接受它；默认仍保留原 glibc 测试器以重现历史记录。
+
 纯电脑 ARM/Linux 3.18.44 集成验证：
 
 ```sh

@@ -25,6 +25,26 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(b''.join(chunks), blob)
         self.assertTrue(all(0 < len(x) <= 1048576 for x in chunks))
 
+    def test_compact_probe_requires_matching_vm_receipt(self):
+        m = self.load()
+        self.assertTrue(hasattr(m, 'probe_input'), 'compact probe selection is not implemented')
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); (root/'runtime-build').mkdir()
+            build = {'compact_probe': {'bytes': 60000, 'sha256': 'a'*64}}
+            legacy, pin = m.probe_input(root, root/'legacy', build, compact=False)
+            self.assertEqual(legacy, root/'legacy/runtime-build/qdc-tun-probe')
+            self.assertEqual(pin, m.PINS['qdc-tun-probe'])
+            with self.assertRaises(ValueError):
+                m.probe_input(root, root/'legacy', build, compact=True)
+            receipt = root/'runtime-build'/('compact-probe-'+'a'*64+'.json')
+            receipt.write_text(json.dumps({'status':'passed','probe_sha256':'b'*64,'cases':list(m.PROBE_VM_CASES)}))
+            with self.assertRaises(ValueError):
+                m.probe_input(root, root/'legacy', build, compact=True)
+            receipt.write_text(json.dumps({'status':'passed','probe_sha256':'a'*64,'cases':list(m.PROBE_VM_CASES)}))
+            probe, pin = m.probe_input(root, root/'legacy', build, compact=True)
+            self.assertEqual(probe, root/'runtime-build/qdc-tun-probe-musl')
+            self.assertEqual(pin, 'a'*64)
+
     def test_ids_reject_shell_and_path_injection(self):
         m = self.load()
         for value in ['', '../x', 'a b', 'a;reboot', '$(id)', 'a'*49]:

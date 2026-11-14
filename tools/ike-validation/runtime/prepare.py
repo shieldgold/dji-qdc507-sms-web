@@ -15,6 +15,25 @@ PINS = {
     'tun.ko': '2b44764dc5bee73faab5671bc5575cb08cb08c8cb68854fb8ef1a85b5ca8637d',
     'qdc-tun-probe': 'f590c4c4fd9b8fcc8b5fba45326e14d64ebbc0752abcc3c286ae5b1094d58c5b',
 }
+PROBE_VM_CASES = {'probe_selftest', 'probe_no_go', 'probe_log_gate',
+                  'probe_features', 'probe_create', 'probe_traffic'}
+
+
+def probe_input(local, tun_local, build, compact=False):
+    if not compact:
+        return tun_local/'runtime-build'/'qdc-tun-probe', PINS['qdc-tun-probe']
+    meta = build.get('compact_probe', {})
+    digest = meta.get('sha256', '')
+    if not re.fullmatch('[0-9a-f]{64}', digest) or not 0 < meta.get('bytes', 0) <= 192*1024:
+        raise ValueError('compact probe build metadata missing or exceeds budget')
+    receipt = local/'runtime-build'/('compact-probe-'+digest+'.json')
+    try:
+        validation = json.loads(receipt.read_text())
+    except (OSError, ValueError) as exc:
+        raise ValueError('compact probe requires completed ARM VM validation') from exc
+    if validation.get('status') != 'passed' or validation.get('probe_sha256') != digest or not PROBE_VM_CASES <= set(validation.get('cases', [])):
+        raise ValueError('compact probe VM receipt does not match reviewed artifact/cases')
+    return local/'runtime-build'/'qdc-tun-probe-musl', digest
 
 
 def checked_id(value):
@@ -186,20 +205,25 @@ def main():
     parser.add_argument('--tun-local', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True, help='new local directory, never upload destination')
     parser.add_argument('--run', required=True)
+    parser.add_argument('--compact-probe', action='store_true', help='use same-source musl probe only after matching ARM VM validation')
     args = parser.parse_args()
     checked_id(args.run+'_UNLOAD')
     build = json.loads((args.local/'runtime-build'/'build.json').read_text())
     sources = {name: args.local/'output'/name for name in ['charon', 'swanctl']}
     sources['tun.ko'] = args.tun_local/'output'/'tun.ko'
-    sources['qdc-tun-probe'] = args.tun_local/'runtime-build'/'qdc-tun-probe'
+    sources['qdc-tun-probe'], probe_hash = probe_input(args.local, args.tun_local, build, args.compact_probe)
     sources['qdc-ike-guard'] = args.local/'runtime-build'/'qdc-ike-guard'
     pins = {**PINS, 'qdc-ike-guard': build['guard_sha256']}
+    pins['qdc-tun-probe'] = probe_hash
     sys.path.insert(0, str(HERE.parent))
     from inspect_artifact import inspect_elf
     for name in ['charon', 'swanctl', 'qdc-tun-probe', 'qdc-ike-guard']:
         inspect_elf(sources[name].read_bytes())
     manifest = build_bundle(sources, pins, args.out.absolute(), args.run)
     write_private(args.out/'build.json', (json.dumps(build, indent=2)+'\n').encode())
+    if args.compact_probe:
+        receipt = args.local/'runtime-build'/('compact-probe-'+probe_hash+'.json')
+        write_private(args.out/'compact-probe-vm.json', receipt.read_bytes())
     print(json.dumps({'prepared': str(args.out.absolute()), 'device_executed': False,
                       'payload_bytes': sum(x['bytes'] for x in manifest['artifacts'].values())}, ensure_ascii=False))
 

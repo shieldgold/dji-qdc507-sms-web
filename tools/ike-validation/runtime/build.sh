@@ -22,6 +22,11 @@ docker run --rm --network none --platform linux/amd64 \
       -Wall -Wextra -Werror -DQDC_MEM_TEST \
       guard.c proc.c ../lab_mem.c ../../tun-validation/runtime/log_watch.c \
       -o /out/qdc-ike-guard
+  /work/toolchain/bin/musl-gcc -std=gnu99 -Os -static -s -march=armv7-a -mfloat-abi=soft \
+      -ffunction-sections -fdata-sections -Wl,--gc-sections,-z,noexecstack \
+      -Wall -Wextra -Werror ../../tun-validation/runtime/probe.c \
+      ../../tun-validation/runtime/packet.c ../../tun-validation/runtime/log_watch.c \
+      -o /out/qdc-tun-probe-musl
   '
 (
   cd "$TOOLS_DIR/tun-validation/runtime/host"
@@ -38,12 +43,17 @@ tools, out = map(Path, sys.argv[1:])
 sys.path.insert(0, str(tools/'ike-validation'))
 from inspect_artifact import inspect_elf
 artifact = inspect_elf((out/'qdc-ike-guard').read_bytes())
+probe = inspect_elf((out/'qdc-tun-probe-musl').read_bytes())
+assert probe['bytes'] <= 192*1024, 'compact probe exceeded reviewed staging budget'
 paths = ['ike-validation/runtime/guard.c', 'ike-validation/runtime/proc.c',
          'ike-validation/runtime/proc.h', 'ike-validation/runtime/build.sh',
          'ike-validation/lab_mem.c', 'ike-validation/lab_mem.h',
          'tun-validation/runtime/log_watch.c', 'tun-validation/runtime/log_watch.h']
+paths += ['tun-validation/runtime/probe.c', 'tun-validation/runtime/packet.c',
+          'tun-validation/runtime/packet.h']
 manifest = {
     'guard_sha256': artifact['sha256'], 'guard_bytes': artifact['bytes'], 'elf': artifact,
+    'compact_probe': probe,
     'host_controller_sha256': hashlib.sha256((out/'qdc507-ike-control').read_bytes()).hexdigest(),
     'source_sha256': {p: hashlib.sha256((tools/p).read_bytes()).hexdigest() for p in paths},
     'device_executed': False, 'compiler': 'GCC 10.2.1, patched musl 1.2.6; ARM userspace only',

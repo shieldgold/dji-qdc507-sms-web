@@ -45,6 +45,7 @@ done
 cp /export/output/charon /export/output/swanctl "$ROOT/fixtures/"
 cp /src/ike-validation/runtime/idle.conf "$ROOT/fixtures/"
 cp /out/qdc-ike-guard "$ROOT/bin/"
+cp /out/qdc-tun-probe-musl "$ROOT/bin/"
 cp /out/lab-only-vm-fixture "$ROOT/bin/vm-fixture"
 cp /src/ike-validation/runtime/vm-init.sh "$ROOT/init"
 chmod 755 "$ROOT/init"
