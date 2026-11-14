@@ -78,12 +78,29 @@ RAM_CHECK = """awk '$2=="/run" && $3=="tmpfs" && $4 ~ /(^|,)rw(,|$)/ && $4 !~ /(
 """
 
 
-def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=False, client_admission_kib=12288):
+def coexist_admission_exception(run, admission, approved_for):
+    if type(admission) is not int:
+        raise ValueError('integer KiB admission required')
+    if admission == 12288 and approved_for is None:
+        return None
+    if admission != 11776 or approved_for != run:
+        raise ValueError('11.5 MiB coexist admission requires explicit approval bound to this exact run')
+    return {'run_id': run, 'preflight_kib': 11776, 'default_preflight_kib': 12288,
+            'scope': 'single-run upload admission only'}
+
+
+def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=False, client_admission_kib=12288,
+                 coexist_admission_approved_for=None):
     run = checked_id(run)
     checked_id(run+'_UNLOAD')
     coexist = bool(connect and connect.get('mode') == 'coexist')
-    if coexist and (client_admission_kib != 12288 or not low_copy):
-        raise ValueError('coexist preparation requires default 12 MiB and low-copy assembly')
+    exception = None
+    if coexist:
+        if not low_copy:
+            raise ValueError('coexist preparation requires low-copy assembly')
+        exception = coexist_admission_exception(run, client_admission_kib, coexist_admission_approved_for)
+    elif coexist_admission_approved_for is not None:
+        raise ValueError('coexist approval cannot be applied to another test mode')
     if client_admission_kib not in (12288, 11776) or (client_admission_kib < 12288 and not low_copy):
         raise ValueError('11.5 MiB requires explicit low-copy selection; default remains 12 MiB')
     if set(sources) != {'charon', 'swanctl', 'tun.ko', 'qdc-tun-probe', 'qdc-ike-guard'} or set(expected) != set(sources):
@@ -111,6 +128,8 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
         manifest.update(mode='coexist', execution_blocked=True, coexist_seconds=30,
                         required_binding=['fresh boot ID', 'original supervisor/SMS identity',
                                           'clock recovery guardian identity', 'local HTTP IPv4'])
+        if exception is not None:
+            manifest['admission_exception'] = exception
     owned = ['RUN_ID']
 
     def card(name, op='shell', seconds=30, **fields):

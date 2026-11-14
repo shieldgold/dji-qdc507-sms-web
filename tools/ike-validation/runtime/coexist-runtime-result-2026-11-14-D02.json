@@ -113,8 +113,9 @@
     "controller_closed": true
   },
   "server": {
-    "test_peer_active_before": false,
-    "test_peer_active_after": false,
+    "test_peer_active_before": null,
+    "test_peer_active_after": null,
+    "peer_snapshot_limitation": "Corrected after D03: bare print as-value did not explicitly output returned peer values; empty output is not an idle-peer proof. D02 never started a VPN client.",
     "test_icmp_counter_before": 0,
     "test_icmp_counter_after": 0,
     "configuration_changed": false

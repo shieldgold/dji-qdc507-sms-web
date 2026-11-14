@@ -12,7 +12,7 @@ import re
 import shutil
 import shlex
 import stat
-from prepare import build_bundle, checked_id, probe_input, PINS, RAM_CHECK, write_private
+from prepare import build_bundle, checked_id, probe_input, PINS, RAM_CHECK, write_private, coexist_admission_exception
 from prepare_connect import connection_files
 
 VM_CASES = {'normal_30s', 'wrong_guardian', 'no_go', 'http_failure',
@@ -133,9 +133,14 @@ def bind_bundle(bundle, snapshot, destination):
         if path.stat().st_mode & 0o077:
             raise ValueError('bundle contains non-private entries')
     manifest = json.loads((bundle/'manifest.json').read_text())
-    if manifest.get('mode') != 'coexist' or manifest.get('execution_blocked') is not True or manifest.get('preflight_kib') != 12288:
-        raise ValueError('unbound 12 MiB coexist bundle required')
+    if manifest.get('mode') != 'coexist' or manifest.get('execution_blocked') is not True:
+        raise ValueError('unbound coexist bundle required')
     run = checked_id(manifest['run_id']); control = control_bytes(run, snapshot)
+    approval = manifest.get('admission_exception')
+    expected_approval = coexist_admission_exception(run, manifest.get('preflight_kib'),
+                                                   approval.get('run_id') if isinstance(approval, dict) else None)
+    if approval != expected_approval or [manifest.get(k) for k in ('start_after_staging_kib', 'stop_below_kib', 'stop_drop_kib', 'coexist_seconds', 'assembly')] != [8192, 6144, 3072, 30, 'move-append']:
+        raise ValueError('single-run admission approval and unchanged runtime limits required')
     checked_connection(manifest['connection'])
     if set(manifest['artifacts']) != ARTIFACTS:
         raise ValueError('exact coexist artifact set required')
@@ -207,7 +212,9 @@ def prepare_bundle(a):
     pins = {**PINS, 'qdc-ike-guard': digest, 'qdc-tun-probe': probe_hash}
     connect = connection_files(json.loads(a.params.read_text()), a.credentials, a.direct)
     connect['mode'] = 'coexist'
-    manifest = build_bundle(sources, pins, a.out.absolute(), a.run, connect, low_copy=True)
+    manifest = build_bundle(sources, pins, a.out.absolute(), a.run, connect, low_copy=True,
+                            client_admission_kib=a.client_admission_kib,
+                            coexist_admission_approved_for=a.approve_lower_admission_for)
     for name, data in [('build.json', (a.guard_build/'build.json').read_bytes()), ('coexist-vm.json', receipt_path.read_bytes()),
                        ('public-connection.json', a.params.read_bytes())]:
         write_private(a.out/name, data)
@@ -273,6 +280,8 @@ def main():
     for name in ('tun-local', 'guard-build', 'credentials', 'params', 'out'):
         prep.add_argument('--'+name, type=Path, required=True)
     prep.add_argument('--run', required=True); prep.add_argument('--direct', type=ipaddress.IPv4Address, required=True)
+    prep.add_argument('--client-admission-kib', type=int, choices=(12288,11776), default=12288)
+    prep.add_argument('--approve-lower-admission-for', help='explicit one-run approval; must equal --run for 11.5 MiB')
     bind = sub.add_parser('bind', help='offline: create fresh single-step cards; never execute')
     bind.add_argument('bundle', type=Path); bind.add_argument('--snapshot', type=Path, required=True); bind.add_argument('--out', type=Path, required=True)
     accept = sub.add_parser('accept', help='offline: revalidate exact final ARM evidence and publish matching receipt')
@@ -285,7 +294,8 @@ def main():
         print(json.dumps({'receipt': str(path), 'device_executed': False})); return
     manifest = prepare_bundle(a) if a.mode == 'prepare' else bind_bundle(a.bundle, json.loads(a.snapshot.read_text()), a.out)
     print(json.dumps({'prepared': str(a.out.absolute()), 'device_executed': False,
-                      'execution_blocked': manifest['execution_blocked'], 'coexist_seconds': 30}))
+                      'execution_blocked': manifest['execution_blocked'], 'coexist_seconds': 30,
+                      'preflight_kib': manifest['preflight_kib']}))
 
 
 if __name__ == '__main__': main()

@@ -33,15 +33,47 @@ class CoexistBundleTests(unittest.TestCase):
                 'guardian': {'pid': 2001, 'start': 12346, 'exe': f'/run/qdc-tun-{run}/qdc-ike-guard',
                     'argv': [f'/run/qdc-tun-{run}/qdc-ike-guard', 'resume-clock', '431', '813', '300']}}
 
-    def bundle(self, root):
+    def bundle(self, root, *, admission=12288, approval=None):
         from prepare import build_bundle
         sources, pins = test_prepare.BundleTests().fixture(root)
         connection = {'mode': 'coexist', 'target': '10.99.0.1', 'vip': '10.88.0.2',
             'transport': 'direct', 'peer_address': '10.77.0.1',
             'files': {n: b'lab-only' for n in ('client.key', 'client.pem', 'ca.pem', 'swanctl.conf')}}
         out = root/'bundle'
-        manifest = build_bundle(sources, pins, out, 'LAB01', connection, low_copy=True)
+        kwargs = {'low_copy': True, 'client_admission_kib': admission}
+        if approval is not None: kwargs['coexist_admission_approved_for'] = approval
+        manifest = build_bundle(sources, pins, out, 'LAB01', connection, **kwargs)
         return out, manifest
+
+    def test_lower_coexist_admission_requires_matching_run_approval(self):
+        self.load()
+        for admission, approval in ((11776,None), (11776,'OTHER_RUN'), (12288,'LAB01'), (11776.0,'LAB01')):
+            with tempfile.TemporaryDirectory() as td, self.subTest(approval=approval):
+                with self.assertRaises(ValueError):
+                    self.bundle(Path(td), admission=admission, approval=approval)
+
+    def test_single_run_lower_admission_preserves_stops_and_binds(self):
+        m = self.load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle, manifest = self.bundle(root, admission=11776, approval='LAB01')
+            self.assertEqual(manifest['preflight_kib'], 11776)
+            self.assertEqual(manifest['admission_exception'], {'run_id':'LAB01', 'preflight_kib':11776,
+                'default_preflight_kib':12288, 'scope':'single-run upload admission only'})
+            self.assertEqual([manifest[k] for k in ('start_after_staging_kib','stop_below_kib','stop_drop_kib','coexist_seconds')], [8192,6144,3072,30])
+            gate = json.loads((bundle/'cards/23-client-memory-gate.json').read_text())
+            self.assertIn('-ge 11776', gate['command'])
+            bound = m.bind_bundle(bundle, self.snapshot(), root/'bound')
+            self.assertEqual(bound['admission_exception'], manifest['admission_exception'])
+            self.assertFalse(bound['execution_blocked'])
+            for key, value in [('preflight_kib',11775),('stop_below_kib',4096),('stop_drop_kib',4096),('start_after_staging_kib',6144)]:
+                bad = copy.deepcopy(manifest); bad[key] = value
+                (bundle/'manifest.json').write_text(json.dumps(bad))
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    m.bind_bundle(bundle, self.snapshot(), root/'bad')
+            bad = copy.deepcopy(manifest); bad['admission_exception']['run_id'] = 'OLD_RUN'
+            (bundle/'manifest.json').write_text(json.dumps(bad))
+            with self.assertRaises(ValueError): m.bind_bundle(bundle, self.snapshot(), root/'bad')
 
     def test_unbound_bundle_has_no_executable_coexist_or_connect_card(self):
         self.load()

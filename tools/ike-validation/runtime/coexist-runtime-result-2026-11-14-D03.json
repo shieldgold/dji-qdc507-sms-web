@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "status": "coexistence_stopped_on_original_memory_drop_limit",
+  "coexistence_accepted": false,
+  "authorization": {
+    "single_logical_test_admission_kib": 11776,
+    "default_admission_kib": 12288,
+    "runtime_limits_changed": false,
+    "firmware_changed": false,
+    "autostart_changed": false
+  },
+  "preflight_attempt": {
+    "run": "IKE20261114D03",
+    "admission_kib": [
+      12116,
+      12156,
+      12156
+    ],
+    "native_connect_started": false,
+    "refusal": "recovery guardian older than 180 seconds",
+    "native_exit": 65,
+    "automatic_sms_recovery_ttl_seconds": 300,
+    "recovery_log": "runtime-logs/IKE20261114D03-recovery",
+    "recovered_and_cleaned": true
+  },
+  "actual_test": {
+    "run": "IKE20261114D03B",
+    "admission_kib": [
+      12116,
+      12104,
+      12104
+    ],
+    "guard_ready_to_launch_seconds": 72.429,
+    "ike_established": true,
+    "vip": "10.77.77.39",
+    "target": "10.10.40.1/32",
+    "transport": "rmnet_data0 direct UDP 500/4500",
+    "precheck_encrypted_ping_pairs": 5,
+    "sms_restored_before_window": true,
+    "sms_process": {
+      "pid": 1986,
+      "start": 1001659,
+      "parent": 428
+    },
+    "completed_coexist_ping_http_pairs": 9,
+    "last_completed_pair_elapsed_seconds": 24.749,
+    "tenth_ping_child_start_elapsed_seconds": 27.154,
+    "stop_elapsed_precision": "about 27 seconds, inferred from tenth ping start; STOP line has no timestamp",
+    "required_window_seconds": 30,
+    "window_complete": false,
+    "runtime_start_available_kib": 9800,
+    "min_available_kib": 6640,
+    "memory_drop_kib": 3160,
+    "allowed_drop_kib": 3072,
+    "drop_excess_kib": 88,
+    "absolute_floor_kib": 6144,
+    "floor_breached": false,
+    "charon_peak_kib_including_rusage": 1468,
+    "cli_peak_kib_including_rusage": 664,
+    "smaps": {
+      "guard": {
+        "samples": 38,
+        "sampled_rss_peak_kib": 168,
+        "sampled_pss_peak_kib": 164,
+        "sampled_anonymous_peak_kib": 76
+      },
+      "charon": {
+        "samples": 37,
+        "sampled_rss_peak_kib": 1464,
+        "sampled_pss_peak_kib": 1464,
+        "sampled_anonymous_peak_kib": 344
+      },
+      "cli": {
+        "samples": 8,
+        "sampled_rss_peak_kib": 660,
+        "sampled_pss_peak_kib": 456,
+        "sampled_anonymous_peak_kib": 124
+      },
+      "smsweb": {
+        "samples": 26,
+        "sampled_rss_peak_kib": 6364,
+        "sampled_pss_peak_kib": 6364,
+        "sampled_anonymous_peak_kib": 3108
+      }
+    },
+    "sampling_read_to_eof": true,
+    "post_cleanup_sms_http": 200,
+    "direct_children_reaped": true,
+    "raw_end_receipt_seconds_after_pause": 114.662535
+  },
+  "server": {
+    "test_icmp_packets_before": 0,
+    "test_icmp_packets_after": 15,
+    "rule_requires_ipsec": true,
+    "test_peer_absent_after_verified_with_explicit_put": true,
+    "active_peer_snapshot_limitation": "monitor omitted :put around print as-value; its 54 empty peer outputs do not prove idle/active peer identity",
+    "counter_snapshots": 54,
+    "configuration_changed": false
+  },
+  "cleanup": {
+    "baseline_comparisons": {
+      "D03_recovered": {
+        "boot_and_taint": true,
+        "kernel_config": true,
+        "dns": true,
+        "interfaces": true,
+        "addresses": true,
+        "routes": true,
+        "firewall_rules": true,
+        "modules": true
+      },
+      "D03B_final": {
+        "boot_and_taint": true,
+        "kernel_config": true,
+        "dns": true,
+        "interfaces": true,
+        "addresses": true,
+        "routes": true,
+        "firewall_rules": true,
+        "modules": true
+      }
+    },
+    "temporary_directories_removed": true,
+    "ipsec0_vip_target_route_absent": true,
+    "tun_module_and_owned_node_absent": true,
+    "owned_processes_absent": true,
+    "original_supervisor_pid": 428,
+    "original_supervisor_start": 826,
+    "same_supervisor_retained": true,
+    "restored_sms_same_identity_after_cleanup": true,
+    "sms_binary_and_start_script_unchanged": true,
+    "sms_http": 200,
+    "sim_ready": true,
+    "post_restore_log_seconds": 30,
+    "post_restore_log_passed": true,
+    "all_controllers_closed": true,
+    "reboot_required": false
+  },
+  "controller_logs": {
+    "IKE20261114D03": {
+      "results": 38,
+      "usb_transfers": 3452,
+      "usb_errors": 0,
+      "usb_short_writes": 0,
+      "closed": true
+    },
+    "IKE20261114D03-recovery": {
+      "results": 6,
+      "usb_transfers": 343,
+      "usb_errors": 0,
+      "usb_short_writes": 0,
+      "closed": true
+    },
+    "IKE20261114D03B": {
+      "results": 46,
+      "usb_transfers": 4351,
+      "usb_errors": 0,
+      "usb_short_writes": 0,
+      "closed": true
+    }
+  },
+  "guard_sha256": "be9e3c4f79042e42bd6a85696f38fc82cae936176d83ad65dae78aca253c0844",
+  "cpu_tests": {
+    "total": 47,
+    "passed": 46,
+    "skipped": 1,
+    "skip_reason": "amd64 binfmt exposes interpreter in live-executable cleanup-card test"
+  },
+  "conclusion": "IKEv2/IPsec and SMS served concurrently for nine complete pairs, but the required 30-second window failed the unchanged 3 MiB memory-drop rule. No installation or autostart was performed."
+}
