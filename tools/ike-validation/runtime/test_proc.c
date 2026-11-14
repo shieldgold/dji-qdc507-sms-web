@@ -14,7 +14,7 @@ int main(void) {
     struct proc_id id;
     assert(!prctl(PR_SET_NAME, "a ) odd ( name", 0, 0, 0));
     assert(!proc_identity(getpid(), &id));
-    assert(id.pid == getpid() && id.start > 0 && id.state != 'Z');
+    assert(id.pid == getpid() && id.parent == getppid() && id.start > 0 && id.state != 'Z');
     assert(proc_matches(getpid(), id.start, "/definitely/not/the/executable") == 0);
     assert(proc_matches(getpid(), id.start + 1, id.exe) == 0);
     assert(proc_matches(getpid(), id.start, id.exe) == 1);

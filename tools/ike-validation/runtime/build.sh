@@ -14,13 +14,19 @@ docker run --rm --network none --platform linux/amd64 \
       proc.c ../lab_mem.c test_proc.c -o /out/test-ike-proc
   /out/test-ike-proc
   gcc -std=gnu99 -O2 -Wall -Wextra -Werror -DQDC_MEM_TEST \
-      guard.c proc.c ../lab_mem.c ../../tun-validation/runtime/log_watch.c \
+      coexist.c http_probe.c proc.c ../lab_mem.c test_coexist.c -o /out/test-coexist
+  /out/test-coexist
+  gcc -std=gnu99 -O2 -Wall -Wextra -Werror \
+      http_probe.c test_http_probe_main.c -o /out/test-http-probe
+  gcc -std=gnu99 -O2 -Wall -Wextra -Werror -DQDC_MEM_TEST \
+      guard.c proc.c coexist.c http_probe.c ../lab_mem.c ../../tun-validation/runtime/log_watch.c \
       -o /out/qdc-ike-guard-native
-  QDC_IKE_GUARD=/out/qdc-ike-guard-native python3 -m unittest discover -s . -p "test_*.py"
+  QDC_IKE_GUARD=/out/qdc-ike-guard-native QDC_HTTP_PROBE=/out/test-http-probe \
+      python3 -m unittest discover -s . -p "test_*.py"
   /work/toolchain/bin/musl-gcc -std=gnu99 -Os -static -s -march=armv7-a -mfloat-abi=soft \
       -ffunction-sections -fdata-sections -Wl,--gc-sections,-z,noexecstack \
       -Wall -Wextra -Werror -DQDC_MEM_TEST \
-      guard.c proc.c ../lab_mem.c ../../tun-validation/runtime/log_watch.c \
+      guard.c proc.c coexist.c http_probe.c ../lab_mem.c ../../tun-validation/runtime/log_watch.c \
       -o /out/qdc-ike-guard
   /work/toolchain/bin/musl-gcc -std=gnu99 -Os -static -s -march=armv7-a -mfloat-abi=soft \
       -ffunction-sections -fdata-sections -Wl,--gc-sections,-z,noexecstack \
@@ -46,6 +52,8 @@ artifact = inspect_elf((out/'qdc-ike-guard').read_bytes())
 probe = inspect_elf((out/'qdc-tun-probe-musl').read_bytes())
 assert probe['bytes'] <= 192*1024, 'compact probe exceeded reviewed staging budget'
 paths = ['ike-validation/runtime/guard.c', 'ike-validation/runtime/proc.c',
+         'ike-validation/runtime/coexist.c', 'ike-validation/runtime/coexist.h',
+         'ike-validation/runtime/http_probe.c', 'ike-validation/runtime/http_probe.h',
          'ike-validation/runtime/proc.h', 'ike-validation/runtime/build.sh',
          'ike-validation/lab_mem.c', 'ike-validation/lab_mem.h',
          'tun-validation/runtime/log_watch.c', 'tun-validation/runtime/log_watch.h']

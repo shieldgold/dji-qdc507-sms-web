@@ -31,20 +31,25 @@ int proc_identity(pid_t pid, struct proc_id *id) {
     /* comm may itself contain spaces and parentheses. Field 3 follows LAST ')'. */
     char *end = strrchr(text, ')'), *save = NULL;
     if (!end || end[1] != ' ') return -1;
-    int field = 3; unsigned long long start = 0; char state = 0;
+    int field = 3; unsigned long long start = 0; char state = 0; pid_t parent = -1;
     for (char *p = strtok_r(end + 2, " \n", &save); p; p = strtok_r(NULL, " \n", &save), field++) {
         if (field == 3) state = *p;
+        if (field == 4) {
+            char *tail; errno = 0; long n = strtol(p, &tail, 10);
+            if (errno || *tail || n < 0 || n > INT_MAX) return -1;
+            parent = (pid_t)n;
+        }
         if (field == 22) {
             char *tail; errno = 0; start = strtoull(p, &tail, 10);
             if (errno || *tail) return -1;
             break;
         }
     }
-    if (!start || !state) return -1;
+    if (!start || !state || parent < 0) return -1;
     snprintf(path, sizeof(path), "/proc/%ld/exe", (long)pid);
     ssize_t n = readlink(path, id->exe, sizeof(id->exe)-1);
     if (n < 1 || n == (ssize_t)sizeof(id->exe)-1) return -1;
-    id->exe[n] = 0; id->start = start; id->state = state; id->pid = pid;
+    id->exe[n] = 0; id->start = start; id->state = state; id->pid = pid; id->parent = parent;
     return 0;
 }
 int proc_matches(pid_t pid, unsigned long long start, const char *exe) {

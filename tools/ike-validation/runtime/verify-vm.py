@@ -24,12 +24,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('local', type=Path)
     parser.add_argument('--attempt', type=int, required=True)
+    parser.add_argument('--build-dir', type=Path, help='separate computer-only build; default preserves original interface')
     args = parser.parse_args()
     if args.attempt < 1:
         parser.error('positive attempt required')
     base = args.local.resolve()
-    out = base/'runtime-build'
-    logs = base/'logs'/f'runtime-tools-vm-{args.attempt}'
+    out = args.build_dir.resolve() if args.build_dir else base/'runtime-build'
+    prefix = 'coexist-' if args.build_dir else ''
+    logs = base/'logs'/f'{prefix}runtime-tools-vm-{args.attempt}'
     logs.mkdir(mode=0o700, exist_ok=False)
     paths = [out/'lab-only-runtime-zImage', out/'lab-only-runtime-rootfs.cpio.gz',
              out/'qdc-ike-guard', base/'output/charon', base/'output/swanctl', out/'qdc-tun-probe-musl']

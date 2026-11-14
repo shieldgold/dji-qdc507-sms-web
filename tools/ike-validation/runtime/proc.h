@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include "../lab_mem.h"
-struct proc_id { pid_t pid; unsigned long long start; char state; char exe[512]; };
+struct proc_id { pid_t pid, parent; unsigned long long start; char state; char exe[512]; };
 ssize_t read_complete(const char *, char *, size_t);
 int proc_identity(pid_t, struct proc_id *);
 int proc_matches(pid_t, unsigned long long, const char *);

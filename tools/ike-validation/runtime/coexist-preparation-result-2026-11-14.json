@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "status": "prepared_offline",
+  "device_executed": false,
+  "firmware_changed": false,
+  "autostart_changed": false,
+  "guard": {
+    "sha256": "be9e3c4f79042e42bd6a85696f38fc82cae936176d83ad65dae78aca253c0844",
+    "bytes": 95612,
+    "abi": "ARM EABI5 soft-float"
+  },
+  "cpu": {
+    "tests": 45,
+    "passed": 44,
+    "skipped": 1,
+    "skip": "live executable cleanup card: amd64 binfmt exposes interpreter in /proc; not directly validated by the ARM cases",
+    "c_test_programs": [
+      "PROC_TESTS_OK",
+      "COEXIST_PARSE_TESTS_OK"
+    ]
+  },
+  "arm_regression": {
+    "passed": 20,
+    "logs": "logs/coexist-runtime-tools-vm-3"
+  },
+  "arm_coexist": {
+    "passed": 7,
+    "cases": [
+      "normal_30s",
+      "wrong_guardian",
+      "no_go",
+      "http_failure",
+      "sms_restart",
+      "memory_abort",
+      "signal_abort"
+    ],
+    "normal_seconds": 30.009,
+    "protected_ping_pairs": 10,
+    "http_success": 10,
+    "post_cleanup_sms_check": true,
+    "clock_before_cont": true,
+    "synthetic_sms_only": true,
+    "real_sms_memory_acceptance": false,
+    "logs": "coexist-build/logs/arm-coexist-3"
+  },
+  "receipt": {
+    "schema": 2,
+    "path": "coexist-build/coexist-be9e3c4f79042e42bd6a85696f38fc82cae936176d83ad65dae78aca253c0844.json",
+    "sha256": "6f40ae139143f5bd64795327183f6e360ef74936f6587ef46b278ecdfa4795cc",
+    "embedded_guard_verified_in_both_initrd": true
+  },
+  "package": {
+    "path": "/Users/shield/Documents/ChatGPT/DJI-4G/ike-validation-local/prepared-IKE20261114COEX_PREP02",
+    "run_id": "IKE20261114COEX_PREP02",
+    "execution_blocked": true,
+    "coexist_start_card_present": false,
+    "stages": 36,
+    "payload_bytes": 2559694,
+    "staging_model_remaining_kib": 9694,
+    "private_permissions_verified": true
+  },
+  "limits": {
+    "client_admission_kib": 12288,
+    "start_after_staging_kib": 8192,
+    "stop_below_kib": 6144,
+    "stop_drop_kib": 3072,
+    "coexist_seconds": 30,
+    "hard_deadline_seconds": 80,
+    "hard_kill_grace_seconds": 3,
+    "independent_restore_seconds": 300
+  },
+  "boundaries": [
+    "no physical device, USB or RouterOS access in this preparation",
+    "original accepted client/guard binaries retained unchanged",
+    "no SMS send, login, content read or PIN operation",
+    "module SMS coexistence, real SMS RAM margin, sustained operation and reconnect remain unverified"
+  ]
+}

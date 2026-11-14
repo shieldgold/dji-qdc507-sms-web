@@ -1,6 +1,8 @@
 /* Prepared on the computer. Running idle/resume on hardware needs authorization. */
 #define _GNU_SOURCE
 #include "proc.h"
+#include "coexist.h"
+#include "http_probe.h"
 #include "../../tun-validation/runtime/log_watch.h"
 #include <dirent.h>
 #include <errno.h>
@@ -36,6 +38,8 @@ static size_t log_bytes;
 static long daemon_peak, cli_peak, min_available = LONG_MAX;
 static char cli_text[65536];
 static size_t cli_used;
+static struct qdc_coexist coexist;
+static long sms_peak;
 
 static double monotonic(void) {
     struct timespec t;
@@ -148,6 +152,9 @@ static int sample(pid_t pid, const char *label, long *peak) {
 }
 static int tick(void) {
     if (interrupted || drain()) return -1;
+    if (coexist.active && !qdc_coexist_alive(&coexist)) {
+        puts("STOP sms_or_supervisor_identity_changed"); return -1;
+    }
     long avail = memory_available();
     if (avail < min_available) min_available = avail;
     if (!memory_safe(avail, baseline)) {
@@ -159,7 +166,8 @@ static int tick(void) {
         printf("MEM monotonic=%.3f available_kib=%ld baseline_kib=%ld\n", now, avail, baseline);
         if (sample(getpid(), "guard", &(long){0}) ||
             sample((pid_t)daemon_pid, "charon", &daemon_peak) ||
-            sample((pid_t)cli_pid, "cli", &cli_peak)) return -1;
+            sample((pid_t)cli_pid, "cli", &cli_peak) ||
+            (coexist.active && sample(coexist.sms.pid, "smsweb", &sms_peak))) return -1;
     }
     struct pollfd fds[2] = {{kmsg_fd, POLLIN, 0}, {output_fd, POLLIN, 0}};
     int rc = poll(fds, output_fd >= 0 ? 2 : 1, 250);
@@ -203,6 +211,7 @@ static void capture_cli(const char *buf, size_t n) {
 static int spawnv(const char *root, int daemon, const char *const *args, int timeout) {
     char path[256];
     if (daemon == 2) snprintf(path, sizeof(path), "/bin/busybox");
+    else if (daemon == 3) snprintf(path, sizeof(path), "%s/qdc-ike-guard", root);
     else snprintf(path, sizeof(path), "%s/%s", root, daemon ? "charon" : "swanctl");
     int is_daemon = daemon == 1;
     if (!is_daemon) { cli_used = 0; cli_text[0] = 0; }
@@ -377,9 +386,64 @@ static int cleanup_runtime(const char *token) {
     if (unexpected || unlink("/run/qdc-ike/.owner") || rmdir("/run/qdc-ike")) return -1;
     return 0;
 }
-static int idle(const char *root, const char *token, int seconds, const char *target, const char *vip) {
+static int coexist_tick(void) {
+    int status;
+    if (tick()) return -1;
+    if (reap(&daemon_pid, &status, WNOHANG) > 0 || !daemon_pid) {
+        puts("STOP charon_early_exit"); return -1;
+    }
+    return 0;
+}
+static int coexist_window(const char *root, const char *target, const char *vip) {
+    char path[256]; struct stat st;
+    snprintf(path, sizeof(path), "%s/swanctl", root);
+    if (cli_pid || !trusted_file(path, 1) || lstat(path, &st) || st.st_nlink != 1 || unlink(path)) return -1;
+    puts("COEXIST_CLI_RELEASED no_swanctl_process=1");
+    if (qdc_coexist_begin(root, &coexist)) { puts("STOP restore_handoff_refused"); return -1; }
+    double until = monotonic()+12; int ready = 0;
+    while (monotonic() < until) {
+        if (coexist_tick()) return -1;
+        int state = qdc_coexist_restored(root, &coexist);
+        if (state < 0) { puts("STOP restore_clock_or_sms_identity"); return -1; }
+        if (state == 1) { ready = 1; break; }
+    }
+    if (!ready) { puts("STOP sms_restore_timeout"); return -1; }
+    const char *http[] = {"http-once", coexist.http, NULL};
+    int http_ready = 0;
+    while (monotonic() < until) {
+        if (!spawnv(root, 3, http, 3) && strstr(cli_text, "HTTP_PROBE status=200 transport=1")) {
+            http_ready = 1; break;
+        }
+        if (!strstr(cli_text, "transport=0")) break;
+        if (coexist_tick()) return -1;
+    }
+    if (!http_ready) { puts("STOP sms_http_startup"); return -1; }
+    double began = monotonic();
+    printf("COEXIST_READY seconds=30 sms_pid=%ld sms_start=%llu monotonic=%.3f\n", (long)coexist.sms.pid, coexist.sms.start, began);
+    const char *ping[] = {"ping", "-c", "1", "-W", "1", "-s", "128", "-I", vip, target, NULL};
+    for (int pair = 0; pair < 10; pair++) {
+        while (monotonic() < began+pair*3) if (coexist_tick()) return -1;
+        if (!owned_target_route(target) || has_vip(vip, 1) != 1 ||
+            spawnv(root, 2, ping, 3) || !strstr(cli_text, "1 packets received")) {
+            puts("STOP coexist_protected_ping"); return -1;
+        }
+        if (spawnv(root, 3, http, 3) || !strstr(cli_text, "HTTP_PROBE status=200 transport=1")) {
+            puts("STOP coexist_sms_http"); return -1;
+        }
+        printf("COEXIST_PAIR index=%d ping=1 http_status=200 monotonic=%.3f\n", pair+1, monotonic());
+        if (monotonic() > began+30) { puts("STOP coexist_pair_budget"); return -1; }
+    }
+    while (monotonic() < began+30) if (coexist_tick()) return -1;
+    if (!qdc_coexist_alive(&coexist) || has_vip(vip, 1) != 1 || !owned_target_route(target)) return -1;
+    printf("COEXIST_TRAFFIC_COMPLETE seconds=%.3f ping_pairs=10 http_success=10 sms_peak_kib=%ld\n", monotonic()-began, sms_peak);
+    return 0;
+}
+static int idle(const char *root, const char *token, int seconds, const char *target, const char *vip, int with_sms) {
     char path[256], before[128], after[128]; struct stat st; struct rlimit limit;
     if (geteuid() || !trusted_root(root)) return 65;
+    if (with_sms && (qdc_coexist_load(root, token, &coexist) || qdc_coexist_preflight(root, &coexist))) {
+        puts("PREFLIGHT_COEXIST_REFUSED"); return 65;
+    }
     for (int i = 0; i < 3; i++) {
         snprintf(path, sizeof(path), "%s/%s", root, i == 0 ? "charon" : i == 1 ? "swanctl" : "strongswan.conf");
         if (!trusted_file(path, i < 2)) return 65;
@@ -410,7 +474,10 @@ static int idle(const char *root, const char *token, int seconds, const char *ta
     if (memory_available() < 8192 || !memory_safe(memory_available(), baseline)) {
         puts("PREFLIGHT_MEMORY_REFUSED after_GO=1"); close(kmsg_fd); return 87;
     }
-    signal(SIGALRM, hard_deadline); alarm((unsigned)(seconds + 20));
+    if (with_sms && qdc_coexist_preflight(root, &coexist)) {
+        puts("PREFLIGHT_COEXIST_REFUSED after_GO=1"); close(kmsg_fd); return 65;
+    }
+    signal(SIGALRM, hard_deadline); alarm((unsigned)(with_sms ? 80 : seconds + 20));
     int rc = 1, created = 0, ns_entered = 0, creds_started = 0;
     snprintf(path, sizeof(path), "%s/%s.state", root, token);
     state_fd = open(path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600);
@@ -454,7 +521,9 @@ static int idle(const char *root, const char *token, int seconds, const char *ta
         if (!owned_target_route(target)) { puts("STOP target_route_refused"); goto done; }
         printf("CONNECTED expected_vip=%s target=%s route_prefix=32\n", vip, target);
         if (spawnv(root, 2, ping, 11) || !strstr(cli_text, "5 packets received") ||
-            spawn(root, 0, "--list-sas") || spawnv(root, 0, rekey, 8)) goto done;
+            spawn(root, 0, "--list-sas")) goto done;
+        if (with_sms) { rc = coexist_window(root, target, vip) ? 1 : 0; goto done; }
+        if (spawnv(root, 0, rekey, 8)) goto done;
         until = monotonic()+2;
         while (monotonic() < until) if (tick()) goto done;
         if (spawn(root, 0, "--list-sas") || !strstr(cli_text, "ESTABLISHED") || !strstr(cli_text, "INSTALLED") ||
@@ -490,9 +559,20 @@ done:
         if (drain()) { rc = 1; break; }
         struct timespec d = {0, 100000000}; nanosleep(&d, NULL);
     }
+    if (with_sms && coexist.active) {
+        const char *http[] = {"http-once", coexist.http, NULL};
+        if (!qdc_coexist_alive(&coexist) || spawnv(root, 3, http, 3) ||
+            !strstr(cli_text, "HTTP_PROBE status=200 transport=1") || !qdc_coexist_alive(&coexist)) {
+            puts("STOP post_cleanup_sms_health"); rc = 1;
+        } else puts("COEXIST_POST_SMS_OK same_identity=1 http_status=200");
+    }
+    if (cli_pid) {
+        puts("RECOVERY_REQUIRED final_http_child_not_reaped hard_deadline_retained=1");
+        return 1;
+    }
     alarm(0); close(kmsg_fd); if (state_fd >= 0) close(state_fd);
     printf("MEMORY_SUMMARY charon_peak_kib=%ld cli_peak_kib=%ld min_available_kib=%ld smaps_read_to_eof=1\n", daemon_peak, cli_peak, min_available);
-    printf("%s_COMPLETE rc=%d children_reaped=1\n", target ? "CONNECT" : "IDLE", rc);
+    printf("%s_COMPLETE rc=%d children_reaped=1\n", with_sms ? "COEXIST" : target ? "CONNECT" : "IDLE", rc);
     return rc;
 }
 static int resume(pid_t pid, unsigned long long start, int seconds, int restore_clock) {
@@ -523,6 +603,7 @@ int main(int argc, char **argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     signal(SIGCHLD, SIG_DFL);
     signal(SIGTERM, signal_stop); signal(SIGINT, signal_stop); signal(SIGHUP, signal_stop); signal(SIGPIPE, signal_stop);
+    if (argc == 3 && !strcmp(argv[1], "http-once")) return qdc_http_once(argv[2]);
     if (argc == 2 && !strcmp(argv[1], "selftest")) {
         struct proc_id id; struct qdc_smaps sm;
         if (proc_identity(getpid(), &id) || !proc_matches(getpid(), id.start, id.exe) ||
@@ -543,18 +624,22 @@ int main(int argc, char **argv) {
     if (argc == 5 && !strcmp(argv[1], "idle")) {
         unsigned long long seconds = number(argv[4]);
         if (!identifier(argv[3]) || !seconds || seconds > 60) return 64;
-        return idle(argv[2], argv[3], (int)seconds, NULL, NULL);
+        return idle(argv[2], argv[3], (int)seconds, NULL, NULL, 0);
     }
     if (argc == 7 && !strcmp(argv[1], "connect")) {
         unsigned long long seconds = number(argv[4]);
         if (!identifier(argv[3]) || !seconds || seconds > 60 || !ipv4(argv[5]) || !ipv4(argv[6]) || !strcmp(argv[5], argv[6])) return 64;
-        return idle(argv[2], argv[3], (int)seconds, argv[5], argv[6]);
+        return idle(argv[2], argv[3], (int)seconds, argv[5], argv[6], 0);
+    }
+    if (argc == 7 && !strcmp(argv[1], "coexist")) {
+        if (!identifier(argv[3]) || strcmp(argv[4], "30") || !ipv4(argv[5]) || !ipv4(argv[6]) || !strcmp(argv[5], argv[6])) return 64;
+        return idle(argv[2], argv[3], 30, argv[5], argv[6], 1);
     }
     if (argc == 5 && (!strcmp(argv[1], "resume") || !strcmp(argv[1], "resume-clock"))) {
         unsigned long long pid = number(argv[2]), start = number(argv[3]), seconds = number(argv[4]);
         if (!pid || pid > INT_MAX || !start || !seconds || seconds > 300) return 64;
         return resume((pid_t)pid, start, (int)seconds, !strcmp(argv[1], "resume-clock"));
     }
-    fputs("usage: qdc-ike-guard selftest | describe PID | identity PID START EXE | idle RAM_ROOT TOKEN 1..60 | resume[-clock] SUP_PID START 1..300\n", stderr);
+    fputs("usage: qdc-ike-guard selftest | describe PID | identity PID START EXE | http-once LOCAL_IPV4 | idle RAM_ROOT TOKEN 1..60 | connect RAM_ROOT TOKEN 1..60 TARGET VIP | coexist RAM_ROOT RUN_COEX 30 TARGET VIP | resume[-clock] SUP_PID START 1..300\n", stderr);
     return 64;
 }

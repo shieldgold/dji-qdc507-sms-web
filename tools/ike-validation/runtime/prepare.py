@@ -81,6 +81,9 @@ RAM_CHECK = """awk '$2=="/run" && $3=="tmpfs" && $4 ~ /(^|,)rw(,|$)/ && $4 !~ /(
 def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=False, client_admission_kib=12288):
     run = checked_id(run)
     checked_id(run+'_UNLOAD')
+    coexist = bool(connect and connect.get('mode') == 'coexist')
+    if coexist and (client_admission_kib != 12288 or not low_copy):
+        raise ValueError('coexist preparation requires default 12 MiB and low-copy assembly')
     if client_admission_kib not in (12288, 11776) or (client_admission_kib < 12288 and not low_copy):
         raise ValueError('11.5 MiB requires explicit low-copy selection; default remains 12 MiB')
     if set(sources) != {'charon', 'swanctl', 'tun.ko', 'qdc-tun-probe', 'qdc-ike-guard'} or set(expected) != set(sources):
@@ -104,6 +107,10 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
         manifest['scope'] = 'temporary certificate test; one ipsec0, expected VIP and target /32; no default route/DNS/boot changes'
         manifest['connection'] = {k: connect[k] for k in ('target', 'vip')}
         manifest['connection'].update({k: connect[k] for k in ('transport', 'peer_address') if k in connect})
+    if coexist:
+        manifest.update(mode='coexist', execution_blocked=True, coexist_seconds=30,
+                        required_binding=['fresh boot ID', 'original supervisor/SMS identity',
+                                          'clock recovery guardian identity', 'local HTTP IPv4'])
     owned = ['RUN_ID']
 
     def card(name, op='shell', seconds=30, **fields):
@@ -190,11 +197,13 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
         shell(stage, f'{root}/qdc-ike-guard idle {root} {token} {duration}', seconds=90,
               ready='LOGGER_READY '+token)
         owned.append(token+'.state')
-    if connect:
+    if connect and not coexist:
         token = run+'_CONNECT'
         shell('40-connect', f'{root}/qdc-ike-guard connect {root} {token} 60 {connect["target"]} {connect["vip"]}',
               seconds=90, ready='LOGGER_READY '+token)
         owned.append(token+'.state')
+    if coexist:
+        owned += ['coexist.control', 'coexist.control.part000', 'coexist.control.new', run+'_COEX.state']
     token = run+'_UNLOAD'
     shell('80-unload-tun', f'set -eu\ntest "$(cat /sys/module/tun/refcnt)" = 0\n'
           f'test ! -e /run/qdc-ike\n{root}/qdc-tun-probe watch {token} 10 5 /sbin/rmmod tun',
@@ -212,7 +221,11 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
     # Caller first verifies owned processes exited and restores any stopped SMS loop.
     cleanup = 'set -eu\n'+RAM_CHECK+f'test ! -L {root}\ncd {root}\n'
     cleanup += f'test "$(cat RUN_ID)" = {shlex.quote(run)}\ntest ! -e /sys/module/tun\ntest ! -e /run/qdc-ike\n'
+    cleanup += 'for qdc_proc in /proc/[0-9]*/exe; do\n'
+    cleanup += '  qdc_exe=$(readlink "$qdc_proc" 2>/dev/null || true)\n'
+    cleanup += f'  case "$qdc_exe" in {root}/*) echo "OWNED_PROCESS_ALIVE $qdc_proc"; exit 1;; esac\ndone\n'
     known = owned+['sms-guard.log']
+    manifest['owned_files'] = known
     cleanup += 'for qdc_entry in * .[!.]* ..?*; do\n'
     cleanup += '  if test -e "$qdc_entry" || test -L "$qdc_entry"; then\n'
     cleanup += '    case "$qdc_entry" in\n      '+'|'.join(map(shlex.quote, known))+') test ! -d "$qdc_entry";;\n'
@@ -232,10 +245,15 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
             'real-connect runbook and ARM VM acceptance reviewed']
     if client_admission_kib != 12288:
         manifest['manual_gates'].append('explicit user approval for 11.5 MiB client admission before execution')
+    if coexist:
+        manifest['manual_gates'] += ['unbound package: no executable coexist card until fresh local binding',
+                                     'read COEXIST_TEST_PLAN.zh-CN.md; no SMS send or call']
+    manifest['cards_sha256'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in cards.glob('*.json')}
     write_private(destination/'manifest.json', (json.dumps(manifest, indent=2, ensure_ascii=False)+'\n').encode())
     write_private(destination/'READ-ME-FIRST.txt',
         ('仅电脑准备，未执行。不要把 cards 目录批量发送给控制器。\n'+
-         ('先阅读仓库 REAL_CONNECT_PLAN.zh-CN.md。\n' if connect else '先阅读仓库 TEMP_RUNTIME_TEST_PLAN.zh-CN.md。\n')+
+         ('先阅读仓库 COEXIST_TEST_PLAN.zh-CN.md；当前缺少共存启动卡，必须用新鲜身份另行绑定。\n' if coexist else
+          '先阅读仓库 REAL_CONNECT_PLAN.zh-CN.md。\n' if connect else '先阅读仓库 TEMP_RUNTIME_TEST_PLAN.zh-CN.md。\n')+
          '先授权实测，再逐项发送单张请求卡并审阅结果。\n'
          '按 manifest.stages 顺序逐项核对：每个 20-i 分片组完成后执行对应 21-i 合并卡，再进入下一组。\n'
          '短信暂停/恢复、异常处理和字符节点清理有人工核验门槛，不能靠最后一张卡替代。\n').encode())
