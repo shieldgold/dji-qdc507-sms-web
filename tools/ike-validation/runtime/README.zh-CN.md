@@ -2,7 +2,11 @@
 
 先阅读 [完整方案](../TEMP_RUNTIME_TEST_PLAN.zh-CN.md)。这些源码和电脑端预备包不代表获得实机执行授权。本次构建、打包和 QEMU 检查都没有连接模块。
 
-2026-11-14 新增 [短信与 VPN 共存测试方案](../COEXIST_TEST_PLAN.zh-CN.md)：`build-coexist.sh` 独立输出电脑 `coexist-build`，`prepare_coexist.py prepare` 生成未绑定包，缺少共存启动卡；后续必须使用当轮新鲜身份执行电脑端 `bind` 才会生成卡。共存接口为 `coexist RAM_ROOT RUN_COEX 30 TARGET VIP`，固定 30 秒、默认 12 MiB 准入、6 MiB/下降超过 3 MiB 停止线。`http-once LOCAL_IPV4` 仅检查本机 8787 的网页入口；`resume-clock` 恢复时钟后再 CONT 原监管。当前仅准备工具及隔离实验，未做模块共存实测。
+2026-11-14 新增 [短信与 VPN 共存测试方案](../COEXIST_TEST_PLAN.zh-CN.md)：`build-coexist.sh` 独立输出电脑 `coexist-build`，`prepare_coexist.py prepare` 生成未绑定包，缺少共存启动卡；后续必须使用当轮新鲜身份执行电脑端 `bind` 才会生成卡。共存接口为 `coexist RAM_ROOT RUN_COEX 30 TARGET VIP`，固定 30 秒、默认 12 MiB 准入、6 MiB/下降超过 3 MiB 停止线。`http-once LOCAL_IPV4` 仅检查本机 8787 的网页入口；`resume-clock` 恢复时钟后再 CONT 原监管。电脑工具准备及隔离实验已完成，实机准入结果见下文。
+
+随后执行的 [D02 实机准入记录](../COEXIST_TEST_2026-11-14.zh-CN.md) 在暂停后 12132 KiB、低于 12288 KiB 时停止；短信已恢复、临时工具已清理，未上传客户端或加载 TUN，未进入共存窗口。
+
+通过 macOS PTY 启动电脑控制器时，应在其专属终端关闭规范行缓冲和回显，并确保写入完整请求（本轮采用每次最多 400 字节）。1996 字节清理 JSON 超过该终端行缓冲时，控制器可能根本收不到换行；须先核对 begin 事件/阶段 raw 文件再决定处理，不能把它误认成 USB 错误或盲目重放模块操作。
 
 ## 构建与离线测试
 

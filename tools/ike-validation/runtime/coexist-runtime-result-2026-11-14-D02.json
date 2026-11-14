@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "run_id": "IKE20261114D02",
+  "status": "admission_refused_restored_and_cleaned",
+  "authorization": {
+    "physical_power_cut_confirmed": true,
+    "abnormal_reboot_previously_authorized": true,
+    "firmware_or_autostart_changes": false
+  },
+  "preflight": {
+    "usb": {
+      "vid": "0x2ca3",
+      "pid": "0x4006",
+      "location": "0x01100000"
+    },
+    "boot_id": "7631f460-2e5f-4f75-bebb-5de4f770e760",
+    "kernel_config_sha256": "1fea60b794568c65cd6dfe436fbc2b9dabdf8c16267f01585f171174d5361620",
+    "taint": 4608,
+    "sim_ready": true,
+    "sim_unlocked_by_user": true,
+    "pin_persisted_by_test_tools": false,
+    "cellular_interface": "rmnet_data0",
+    "cellular_ipv4": "10.143.18.93/30",
+    "cellular_gateway": "10.143.18.94",
+    "server_route_verified": true,
+    "device_clock_year": 2026,
+    "wan_ping_pairs": 3,
+    "sms_running_mem_available_kib": [
+      8908,
+      8924,
+      8924
+    ]
+  },
+  "logging": {
+    "pretest_canaries": 3,
+    "canary_seconds": 30,
+    "canary_min_mem_available_kib": [
+      8828,
+      8700,
+      8760
+    ],
+    "post_restore_seconds": 30,
+    "post_restore_log_passed": true,
+    "usb_transfers": 1116,
+    "usb_errors": 0,
+    "usb_short_writes": 0,
+    "usb_short_reads": 178,
+    "controller_results": 20
+  },
+  "admission": {
+    "required_kib": 12288,
+    "observed_kib": [
+      12132
+    ],
+    "shortfall_kib": 156,
+    "first_failure_stopped_remaining_samples": true,
+    "lower_threshold_exception_used": false
+  },
+  "execution": {
+    "bootstrap_uploaded": true,
+    "charon_or_swanctl_uploaded": false,
+    "credentials_uploaded": false,
+    "tun_module_uploaded": false,
+    "tun_loaded": false,
+    "coexistence_executed": false,
+    "encrypted_traffic_tested": false
+  },
+  "recovery": {
+    "guardian": {
+      "pid": 2420,
+      "start": 698346,
+      "ttl_seconds": 300
+    },
+    "supervisor": {
+      "pid": 428,
+      "start": 826,
+      "same_process_retained": true
+    },
+    "old_sms": {
+      "pid": 822,
+      "start": 1186
+    },
+    "restored_sms": {
+      "pid": 2460,
+      "start": 703995,
+      "parent": 428
+    },
+    "clock_before_cont": true,
+    "pause_to_supervisor_resume_receipt_seconds": 29.019523,
+    "pause_to_http_confirmation_seconds": 48.62649,
+    "sms_http": 200,
+    "sim_ready_after_cleanup": true,
+    "reboot_required": false
+  },
+  "cleanup": {
+    "temporary_ram_dir_removed": true,
+    "runtime_dir_absent": true,
+    "tun_module_and_node_absent": true,
+    "owned_processes_absent": true,
+    "baseline_checks": {
+      "boot": true,
+      "kernel_config": true,
+      "dns": true,
+      "interfaces": true,
+      "addresses": true,
+      "routes": true,
+      "firewall": true,
+      "modules": true,
+      "sms_start_script_unchanged": true,
+      "sms_binary_unchanged": true
+    },
+    "controller_closed": true
+  },
+  "server": {
+    "test_peer_active_before": false,
+    "test_peer_active_after": false,
+    "test_icmp_counter_before": 0,
+    "test_icmp_counter_after": 0,
+    "configuration_changed": false
+  },
+  "host_input_issue": {
+    "cause": "macOS canonical PTY input buffered/truncated a 1996-byte request before controller acceptance",
+    "device_cleanup_executions": 1,
+    "usb_failure": false,
+    "offline_reproduced": true,
+    "resolved_by": "noncanonical input and at most 400-byte writes"
+  },
+  "local_logs": "runtime-logs/IKE20261114D02",
+  "conclusion": "Default 12 MiB admission was not met. SMS/VPN coexistence remains unverified on the physical module."
+}
