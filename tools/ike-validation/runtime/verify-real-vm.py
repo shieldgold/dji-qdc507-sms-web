@@ -14,6 +14,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('local', type=Path)
     p.add_argument('--attempt', type=int, required=True)
+    p.add_argument('--direct', action='store_true', help='standard IKE 500 then NAT-T 4500; no custom-port listener')
     a = p.parse_args()
     base = a.local.resolve()
     logs = base/'logs'/('real-runtime-vm-'+str(a.attempt))
@@ -38,7 +39,7 @@ def main():
                    '-netdev', 'socket,id=private,'+net, '-device', 'virtio-net-device,netdev=private,mac='+mac,
                    '-kernel', str(paths[0]), '-initrd', str(paths[1]), '-append',
                    'console=ttyAMA0 loglevel=3 panic=1 maxcpus=1 rdinit=/init rng_core.default_quality=1000 '+
-                   f'qdc.real.lab=1 qdc.role={role} qdc.epoch={int(time.time())}']
+                   f'qdc.real.lab=1 qdc.role={role} qdc.epoch={int(time.time())} qdc.direct={int(a.direct)}']
             (logs/(role+'-command.json')).write_text(json.dumps(cmd, indent=2)+'\n')
             err = (logs/(role+'-qemu.txt')).open('wb')
             proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err)
@@ -55,7 +56,7 @@ def main():
             else:
                 raise TimeoutError(role+' VM deadline; inspect '+str(logs))
         result.update(status='passed', packet_pairs=10, child_rekey=True, vip='10.88.0.2',
-                      custom_natt_port=45000, cleanup_verified=True)
+                      custom_natt_port=None if a.direct else 45000, standard_ports=a.direct, cleanup_verified=True)
     finally:
         for proc, err in reversed(procs):
             if proc.poll() is None:

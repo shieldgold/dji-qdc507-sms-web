@@ -78,9 +78,11 @@ RAM_CHECK = """awk '$2=="/run" && $3=="tmpfs" && $4 ~ /(^|,)rw(,|$)/ && $4 !~ /(
 """
 
 
-def build_bundle(sources, expected, destination, run, connect=None):
+def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=False, client_admission_kib=12288):
     run = checked_id(run)
     checked_id(run+'_UNLOAD')
+    if client_admission_kib not in (12288, 11776) or (client_admission_kib < 12288 and not low_copy):
+        raise ValueError('11.5 MiB requires explicit low-copy selection; default remains 12 MiB')
     if set(sources) != {'charon', 'swanctl', 'tun.ko', 'qdc-tun-probe', 'qdc-ike-guard'} or set(expected) != set(sources):
         raise ValueError('exact reviewed artifact set required')
     blobs = {}
@@ -101,6 +103,7 @@ def build_bundle(sources, expected, destination, run, connect=None):
     if connect:
         manifest['scope'] = 'temporary certificate test; one ipsec0, expected VIP and target /32; no default route/DNS/boot changes'
         manifest['connection'] = {k: connect[k] for k in ('target', 'vip')}
+        manifest['connection'].update({k: connect[k] for k in ('transport', 'peer_address') if k in connect})
     owned = ['RUN_ID']
 
     def card(name, op='shell', seconds=30, **fields):
@@ -125,6 +128,20 @@ def build_bundle(sources, expected, destination, run, connect=None):
              'strongswan.conf': (HERE/('real.conf' if connect else 'idle.conf')).read_bytes()}
     if connect:
         items.update(connect['files'])
+    live_bytes = peak_bytes = 0
+    for name, blob in items.items():
+        if name in ('qdc-ike-guard', 'qdc-tun-probe'):
+            continue  # These already exist when client admission is sampled.
+        chunks = split_blob(blob)
+        duplicate = max(map(len, chunks[1:]), default=0) if low_copy else len(blob)
+        peak_bytes = max(peak_bytes, live_bytes+len(blob)+duplicate)
+        live_bytes += len(blob)
+    headroom = client_admission_kib-(peak_bytes+1023)//1024-256
+    if headroom < 8192:
+        raise ValueError('staging model cannot preserve 8 MiB plus helper reserve')
+    manifest.update(assembly='move-append' if low_copy else 'copy',
+                    staging_peak_extra_bytes=peak_bytes, staging_helper_reserve_kib=256,
+                    staging_model_remaining_kib=headroom)
     for index, (name, blob) in enumerate(items.items()):
         parts = []
         for number, part in enumerate(split_blob(blob)):
@@ -139,11 +156,17 @@ def build_bundle(sources, expected, destination, run, connect=None):
         assembly += f'test ! -e {shlex.quote(name)}\ntest ! -e {shlex.quote(name+".new")}\n'
         assembly += "test \"$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)\" -ge 8192\n"
         assembly += "sha256sum -c <<'QDC_PART_HASHES'\n"+checks+'QDC_PART_HASHES\n'
-        assembly += f'cat {" ".join(map(shlex.quote, parts))} > {shlex.quote(name+".new")}\n'
+        if low_copy:
+            assembly += f'mv {shlex.quote(parts[0])} {shlex.quote(name+".new")}\n'
+            for part in parts[1:]:
+                assembly += f'cat {shlex.quote(part)} >> {shlex.quote(name+".new")}\nrm {shlex.quote(part)}\n'
+        else:
+            assembly += f'cat {" ".join(map(shlex.quote, parts))} > {shlex.quote(name+".new")}\n'
         assembly += f"printf '%s\\n' '{digest}  {name}.new' | sha256sum -c -\n"
         assembly += f'mv {shlex.quote(name+".new")} {shlex.quote(name)}\n'
         assembly += f'chmod {"0500" if name in ("charon", "swanctl", "qdc-ike-guard", "qdc-tun-probe") else "0400"} {shlex.quote(name)}\n'
-        assembly += f'rm {" ".join(map(shlex.quote, parts))}\n'
+        if not low_copy:
+            assembly += f'rm {" ".join(map(shlex.quote, parts))}\n'
         shell(f'21-{index}-assemble', assembly)
         owned.extend([name, name+'.new'])
         if name == 'qdc-ike-guard':
@@ -156,7 +179,7 @@ def build_bundle(sources, expected, destination, run, connect=None):
             shell('23-client-memory-gate', "set -eu\nfor qdc_n in 1 2 3; do\n"
                   "  qdc_available=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)\n"
                   "  echo MEM_GATE available_kib=$qdc_available\n"
-                  "  test \"$qdc_available\" -ge 12288\n  sleep 5\ndone\n", 25)
+                  f"  test \"$qdc_available\" -ge {client_admission_kib}\n  sleep 5\ndone\n", 25)
     shell('25-selftest', f'{root}/qdc-ike-guard selftest')
     token = run+'_LOAD'
     shell('30-load-tun', f'{root}/qdc-tun-probe watch {token} 10 5 /sbin/insmod {root}/tun.ko',
@@ -198,7 +221,7 @@ def build_bundle(sources, expected, destination, run, connect=None):
     cleanup += f'cd /\nrmdir {root}\n'
     shell('90-clean-owned-files', cleanup)
     shell('99-readonly-after', READONLY, 40)
-    manifest.update(preflight_kib=12288, start_after_staging_kib=8192, stop_below_kib=6144, stop_drop_kib=3072)
+    manifest.update(preflight_kib=client_admission_kib, start_after_staging_kib=8192, stop_below_kib=6144, stop_drop_kib=3072)
     manifest['manual_gates'] = ['authorization', 'fresh USB/kernel/HTTP baseline', 'physical recovery availability',
         'SMS guard and exact process identities if pausing', 'one card at a time; no replay',
         'normal driver unload before deleting files', 'owned /dev/net/tun cleanup if mdev leaves it']
@@ -207,6 +230,8 @@ def build_bundle(sources, expected, destination, run, connect=None):
             'clock-restoring SMS guardian ready before service pause',
             'clock restore before SMS CONT; no permanent time or RTC change',
             'real-connect runbook and ARM VM acceptance reviewed']
+    if client_admission_kib != 12288:
+        manifest['manual_gates'].append('explicit user approval for 11.5 MiB client admission before execution')
     write_private(destination/'manifest.json', (json.dumps(manifest, indent=2, ensure_ascii=False)+'\n').encode())
     write_private(destination/'READ-ME-FIRST.txt',
         ('仅电脑准备，未执行。不要把 cards 目录批量发送给控制器。\n'+

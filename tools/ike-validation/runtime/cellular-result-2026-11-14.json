@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-14",
+  "run_id": "IKE20261114C01",
+  "device_executed": true,
+  "status": "basic_cellular_egress_passed_vpn_staging_refused",
+  "sim_unlock": {
+    "authorized": true,
+    "submitted_once": true,
+    "success": true,
+    "pin_in_record": false
+  },
+  "cellular": {
+    "registered": true,
+    "carrier": "China Unicom",
+    "rat": "FDD LTE",
+    "band": "3",
+    "apn": "3gnet",
+    "interface": "rmnet_data0",
+    "default_route_present": true,
+    "carrier_dns_present": true,
+    "ping_server": "183.251.103.88",
+    "ping_transmitted": 3,
+    "ping_received": 3,
+    "min_avg_max_rtt_ms": [
+      29.11,
+      64.211,
+      130.541
+    ]
+  },
+  "system_time_current_after_registration": true,
+  "manual_clock_change": false,
+  "client_admission": {
+    "required_kib": 12288,
+    "paused_samples_kib": [
+      11884,
+      11968,
+      11968,
+      11960
+    ],
+    "gate_sample_kib": 11992,
+    "passed": false
+  },
+  "client_uploaded": false,
+  "credentials_uploaded": false,
+  "tun_loaded": false,
+  "sms_restored_http": 200,
+  "temporary_files_removed": true,
+  "boot_id": "0d8f027b-94e0-4bb5-bd2f-df52ac937d78",
+  "taint_before_after": 4608,
+  "stages": 20,
+  "usb_transfers": 913,
+  "usb_errors": 0,
+  "local_log_dir": "runtime-logs/IKE20261114C01",
+  "evidence_sha256": {
+    "00-network-baseline.raw": "11316b58282585b0e1873393ed8921f6cf37d800dce3115e431414d80935fb57",
+    "01-modem-readonly-state.raw": "a2f3197d450e33f0531722b6abfe903f1292e2d21f0cae895fe88a378df10f9f",
+    "02-after-sim-unlock.raw": "a0445f514bbb7e85735c0ee4aaa7dfde1cd2c25a34a1ddb3dad872ccce5ec7d1",
+    "03-cellular-egress-probe.raw": "4d49d6a2b2bfae0070c769e789785a5c46e10c033b1d75b27f483cb0634eda02",
+    "24-pause-and-memory-samples.raw": "3c640d85061d0e909c39ea5738cb16763bf5ea178f133977a95b691b321f5470",
+    "23-client-memory-gate.raw": "94e489b9840e998697e16c5b43d1d911357d74b4a46e924c6bbacd60446fefde",
+    "87-sms-restore.raw": "9dc4c2bb56dea8578bff54711bb2d842ea2916ddcca87797b7df9537d4cb7d83",
+    "88-no-client-and-network-proof.raw": "f4e408a5f5deeef4cff48e53ac9166623f99b87ec1ea2d05cd36f84432936c97",
+    "98-final-cleanup-proof.raw": "6b98f06cc33e18ddf025059697d2358d67b4f1df461da22c35930afb395d005e",
+    "events.jsonl": "97fdce292c734e307d81a437c5e0fea4bd8547c1accbbaa507c7d5672f81cf12",
+    "usb-transfers.jsonl": "c3088ecfc66c24d5305b249d4fd5351003b58ca5713bb7faf37512dc34b995ae"
+  },
+  "unexecuted_next_bundle": {
+    "run_id": "IKE20261114C02",
+    "requires_explicit_admission_approval": true,
+    "assembly": "move-append",
+    "client_admission_kib": 11776,
+    "staging_peak_extra_bytes": 2393142,
+    "helper_reserve_kib": 256,
+    "model_remaining_kib": 9182,
+    "start_after_staging_kib": 8192,
+    "stop_below_kib": 6144,
+    "stop_drop_kib": 3072,
+    "standard_ports_arm_vm_passed": true,
+    "module_binary_changes": false
+  }
+}

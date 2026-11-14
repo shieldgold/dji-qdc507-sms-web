@@ -9,7 +9,7 @@ import subprocess
 from prepare import build_bundle, probe_input, PINS, write_private
 
 
-def connection_files(params, credentials):
+def swanctl_config(params, direct=None):
     if set(params) != {'relay', 'server_id', 'client_id', 'target', 'vip'}:
         raise ValueError('exact public connection parameter set required')
     for key in ('relay', 'target', 'vip'):
@@ -21,31 +21,19 @@ def connection_files(params, credentials):
     for key in ('client_id', 'server_id'):
         if not re.fullmatch(r'[A-Za-z0-9@._-]{1,200}', params[key]):
             raise ValueError('identity contains unsafe characters')
-    if credentials.is_symlink() or credentials.stat().st_mode & 0o077:
-        raise ValueError('private non-symlink credential directory required')
-    files = {}
-    for name in ('client.key', 'client.pem', 'ca.pem'):
-        path = credentials/name
-        if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o077:
-            raise ValueError('private regular credential files required')
-        data = path.read_bytes()
-        if not 0 < len(data) <= 65536:
-            raise ValueError('credential size outside staging bound')
-        files[name] = data
-    subprocess.run(['openssl', 'verify', '-CAfile', str(credentials/'ca.pem'), str(credentials/'client.pem')],
-                   check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    key_public = subprocess.check_output(['openssl', 'pkey', '-in', str(credentials/'client.key'), '-pubout', '-passin', 'pass:'],
-                                         stderr=subprocess.DEVNULL)
-    cert_public = subprocess.check_output(['openssl', 'x509', '-in', str(credentials/'client.pem'), '-pubkey', '-noout'],
-                                          stderr=subprocess.DEVNULL)
-    if key_public != cert_public:
-        raise ValueError('client certificate and private key do not match')
-    files['swanctl.conf'] = ('''connections {
+    if direct is not None:
+        ip = ipaddress.IPv4Address(direct)
+        if ip.is_unspecified or ip.is_loopback or ip.is_multicast or int(ip) >> 24 >= 224 or str(ip) == params['target']:
+            raise ValueError('distinct unicast IKE endpoint required')
+    values = {**params, 'peer': str(direct) if direct is not None else params['relay'],
+              'local_port': 500 if direct is not None else 4500,
+              'remote_port': 500 if direct is not None else 45000}
+    return ('''connections {
  qdc-test {
   version = 2
-  remote_addrs = %(relay)s
-  local_port = 4500
-  remote_port = 45000
+  remote_addrs = %(peer)s
+  local_port = %(local_port)s
+  remote_port = %(remote_port)s
   proposals = aes256-sha256-modp2048
   encap = yes
   mobike = no
@@ -77,8 +65,34 @@ secrets {
   file = client.key
  }
 }
-''' % params).encode()
-    return {'target': params['target'], 'vip': params['vip'], 'files': files}
+''' % values).encode()
+
+
+def connection_files(params, credentials, direct=None):
+    config = swanctl_config(params, direct)
+    if credentials.is_symlink() or credentials.stat().st_mode & 0o077:
+        raise ValueError('private non-symlink credential directory required')
+    files = {}
+    for name in ('client.key', 'client.pem', 'ca.pem'):
+        path = credentials/name
+        if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o077:
+            raise ValueError('private regular credential files required')
+        data = path.read_bytes()
+        if not 0 < len(data) <= 65536:
+            raise ValueError('credential size outside staging bound')
+        files[name] = data
+    subprocess.run(['openssl', 'verify', '-CAfile', str(credentials/'ca.pem'), str(credentials/'client.pem')],
+                   check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    key_public = subprocess.check_output(['openssl', 'pkey', '-in', str(credentials/'client.key'), '-pubout', '-passin', 'pass:'],
+                                         stderr=subprocess.DEVNULL)
+    cert_public = subprocess.check_output(['openssl', 'x509', '-in', str(credentials/'client.pem'), '-pubkey', '-noout'],
+                                          stderr=subprocess.DEVNULL)
+    if key_public != cert_public:
+        raise ValueError('client certificate and private key do not match')
+    files['swanctl.conf'] = config
+    return {'target': params['target'], 'vip': params['vip'], 'files': files,
+            'transport': 'direct' if direct is not None else 'mac-udp-relay',
+            'peer_address': str(direct) if direct is not None else params['relay']}
 
 
 def main():
@@ -90,6 +104,10 @@ def main():
     p.add_argument('--params', type=Path, required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--run', required=True)
+    p.add_argument('--direct', type=ipaddress.IPv4Address, help='direct IKE endpoint; standard UDP 500/4500, no relay')
+    p.add_argument('--low-copy', action='store_true', help='move first part and append remaining parts before atomic publish')
+    p.add_argument('--client-admission-kib', type=int, choices=(12288, 11776), default=12288,
+                   help='default 12 MiB; 11.5 MiB requires low-copy and explicit execution approval')
     a = p.parse_args()
     build = json.loads((a.local/'runtime-build/build.json').read_text())
     sources = {n: a.local/'output'/n for n in ('charon', 'swanctl')}
@@ -97,8 +115,9 @@ def main():
     sources['qdc-ike-guard'] = a.local/'runtime-build/qdc-ike-guard'
     sources['qdc-tun-probe'], digest = probe_input(a.local, a.tun_local, build, True)
     expected = {**PINS, 'qdc-ike-guard': build['guard_sha256'], 'qdc-tun-probe': digest}
-    connect = connection_files(json.loads(a.params.read_text()), a.credentials)
-    manifest = build_bundle(sources, expected, a.out.absolute(), a.run, connect)
+    connect = connection_files(json.loads(a.params.read_text()), a.credentials, a.direct)
+    manifest = build_bundle(sources, expected, a.out.absolute(), a.run, connect,
+                            low_copy=a.low_copy, client_admission_kib=a.client_admission_kib)
     write_private(a.out/'build.json', (json.dumps(build, indent=2)+'\n').encode())
     write_private(a.out/'public-connection.json', a.params.read_bytes())
     print(json.dumps({'prepared': str(a.out), 'scope': manifest['scope'], 'device_executed': False}))

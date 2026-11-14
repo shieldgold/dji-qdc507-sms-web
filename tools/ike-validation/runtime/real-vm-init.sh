@@ -8,9 +8,9 @@ trap 'rc=$?; test "$rc" = 0 || echo REAL_VM_FAILED rc=$rc; poweroff -f' EXIT
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 mount -t tmpfs -o mode=755 tmpfs /run
-role=; epoch=
+role=; epoch=; direct=0
 for arg in $(cat /proc/cmdline); do
-  case "$arg" in qdc.role=*) role=${arg#*=};; qdc.epoch=*) epoch=${arg#*=};; esac
+  case "$arg" in qdc.role=*) role=${arg#*=};; qdc.epoch=*) epoch=${arg#*=};; qdc.direct=1) direct=1;; esac
 done
 date -u -s "@$epoch"
 mkdir -p /dev/net
@@ -39,7 +39,9 @@ if test "$role" = server; then
   cp "$root/client.pem" /run/qdc-ike/swanctl/x509/client.pem
   cp "$root/ca.pem" /run/qdc-ike/swanctl/x509ca/ca.pem
   # A custom NAT-T listener tests strongSwan's nonstandard-port behavior.
-  awk '{print} /threads =/ {print "  port_nat_t = 45000"}' /fixtures/real.conf > "$root/strongswan.conf"
+  if test "$direct" = 0; then
+    awk '{print} /threads =/ {print "  port_nat_t = 45000"}' /fixtures/real.conf > "$root/strongswan.conf"
+  fi
   ip addr add 10.99.0.1/32 dev lo
   export STRONGSWAN_CONF=$root/strongswan.conf
   "$root/charon" > /run/server.log 2>&1 & daemon=$!
@@ -92,14 +94,16 @@ EOF
   wait "$daemon"
   exit 0
 fi
+local_port=4500; remote_port=45000
+if test "$direct" = 1; then local_port=500; remote_port=500; fi
 cat > "$root/swanctl.conf" <<EOF
 connections {
  qdc-test {
   version = 2
   local_addrs = $own
   remote_addrs = $peer
-  local_port = 4500
-  remote_port = 45000
+  local_port = $local_port
+  remote_port = $remote_port
   proposals = aes256-sha256-modp2048
   encap = yes
   mobike = no

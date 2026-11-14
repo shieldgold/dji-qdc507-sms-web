@@ -3,6 +3,8 @@ import hashlib
 import importlib.util
 import json
 import subprocess
+import inspect
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
@@ -134,6 +136,62 @@ class BundleTests(unittest.TestCase):
             result = subprocess.run(['sh', '-c', command], capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(ram.exists())
+
+    def test_low_copy_assembly_preserves_inode_and_verified_bytes(self):
+        m = self.load()
+        self.assertIn('low_copy', inspect.signature(m.build_bundle).parameters,
+                      'move/append assembly is not implemented')
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); sources,pins=self.fixture(root); out=root/'bundle'
+            manifest=m.build_bundle(sources,pins,out,'LOWCOPY01',low_copy=True)
+            ram=root/'ram';ram.mkdir();(ram/'RUN_ID').write_text('LOWCOPY01\n')
+            for name,index in [('charon',2),('swanctl',3)]:
+                parts=manifest['artifacts'][name]['parts']
+                for part in parts: shutil.copyfile(out/'payload'/part,ram/part)
+                inode=(ram/parts[0]).stat().st_ino
+                command=json.loads((out/'cards'/f'21-{index}-assemble.json').read_text())['command']
+                command=command.replace(m.RAM_CHECK,'').replace(manifest['ram_root'],str(ram))
+                result=subprocess.run(['sh','-c',command],capture_output=True,timeout=5)
+                self.assertEqual(result.returncode,0,result.stderr)
+                self.assertEqual((ram/name).read_bytes(),sources[name].read_bytes())
+                self.assertEqual((ram/name).stat().st_ino,inode,'first part must be moved, not copied')
+                self.assertTrue(all(not (ram/p).exists() for p in parts))
+
+    def test_bad_part_is_rejected_before_low_copy_publish(self):
+        m = self.load()
+        self.assertIn('low_copy',inspect.signature(m.build_bundle).parameters,
+                      'move/append assembly is not implemented')
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td);sources,pins=self.fixture(root);out=root/'bundle'
+            manifest=m.build_bundle(sources,pins,out,'LOWCOPY01',low_copy=True)
+            ram=root/'ram';ram.mkdir();(ram/'RUN_ID').write_text('LOWCOPY01\n')
+            parts=manifest['artifacts']['charon']['parts']
+            for part in parts: shutil.copyfile(out/'payload'/part,ram/part)
+            (ram/parts[-1]).write_bytes(b'corrupt-part')
+            command=json.loads((out/'cards'/'21-2-assemble.json').read_text())['command']
+            command=command.replace(m.RAM_CHECK,'').replace(manifest['ram_root'],str(ram))
+            result=subprocess.run(['sh','-c',command],capture_output=True,timeout=5)
+            self.assertNotEqual(result.returncode,0)
+            self.assertTrue((ram/parts[0]).exists())
+            self.assertFalse((ram/'charon').exists())
+            self.assertFalse((ram/'charon.new').exists())
+
+    def test_lower_admission_is_explicit_and_requires_low_copy(self):
+        m = self.load()
+        self.assertIn('client_admission_kib',inspect.signature(m.build_bundle).parameters,
+                      'explicit per-bundle admission is not implemented')
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td);sources,pins=self.fixture(root)
+            with self.assertRaises(ValueError):
+                m.build_bundle(sources,pins,root/'bad','LOWCOPY01',client_admission_kib=11776)
+            with self.assertRaises(ValueError):
+                m.build_bundle(sources,pins,root/'bad','LOWCOPY01',low_copy=True,client_admission_kib=11775)
+            out=root/'ok'
+            manifest=m.build_bundle(sources,pins,out,'LOWCOPY01',low_copy=True,client_admission_kib=11776)
+            self.assertEqual(manifest['preflight_kib'],11776)
+            self.assertEqual(manifest['start_after_staging_kib'],8192)
+            self.assertEqual(manifest['stop_below_kib'],6144)
+            self.assertEqual(manifest['stop_drop_kib'],3072)
 
 
 if __name__ == '__main__':
