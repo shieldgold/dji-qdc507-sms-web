@@ -43,4 +43,6 @@ prepare.py 只读本机产物并写入新的本机目录，不导入 USB 库、�
 
 当前电脑端验收及摘要见 [preparation-result.json](preparation-result.json)。原始失败日志保留；没有被认定通过的尝试不能替代最终构建的集成验收。
 
+模块原生空载实测已完成，见 [2026-11-14 执行记录](../RUNTIME_TEST_2026-11-14.zh-CN.md) 和 [runtime-result-2026-11-14.json](runtime-result-2026-11-14.json)。所有临时对象已清理，历史 preparation-result.json 仍保留当时仅准备、未实机执行的状态。
+
 最终第 5 次集成验证包含 12 项：无 GO、正常回收、启动日志实时性、提前退出、kmsg 异常、CLI 超时、运行中内存骤降、输出阻塞硬时限、低内存准入拒绝、短信定时恢复、短信提前恢复，以及原网络地址/socket/sysctl 对照。stdout 方案曾因上游 file logger 对标准流的缓冲处理而延迟日志，最终空连接配置采用 stderr；不改动已验证客户端二进制。

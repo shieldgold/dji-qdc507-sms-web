@@ -1,6 +1,6 @@
 # QDC507 IKEv2/IPsec 离线验证工具
 
-本目录在电脑构建客户端并运行 ARM 模拟实验；新增的 [实机临时测试方案](TEMP_RUNTIME_TEST_PLAN.zh-CN.md) 与 [预备工具](runtime/README.zh-CN.md) 只完成电脑端准备，尚未向模块上传或运行客户端，没有常驻安装或开机启动入口。编译结论与内存边界见 [评估报告](ASSESSMENT.zh-CN.md) 和 [result.json](result.json)。
+本目录构建客户端、运行 ARM 模拟实验并提供 [实机临时测试方案](TEMP_RUNTIME_TEST_PLAN.zh-CN.md) 与 [预备工具](runtime/README.zh-CN.md)。2026-11-14 已在模块 RAM 中通过 10 秒及 60 秒空载启动与回收，见 [实机记录](RUNTIME_TEST_2026-11-14.zh-CN.md)；真实 VPN 连接、业务共存和长期稳定性尚未验证，没有常驻安装或开机启动入口。原离线编译结论见 [评估报告](ASSESSMENT.zh-CN.md) 和 [result.json](result.json)。
 
 当前产物为 strongSwan 6.1.0、静态 musl、GMP、用户态 IPsec 后端，ARMv7/EABI5/soft-float。依赖现有 `qdc507-tun-gcc493:local` 基础镜像、Docker、Python、QEMU。基础镜像的来源见 [TUN 构建记录](../tun-validation/README.zh-CN.md)。
 

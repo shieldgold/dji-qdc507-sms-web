@@ -1,0 +1,216 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "timezone": "Asia/Shanghai",
+  "status": "passed_idle_runtime",
+  "scope": {
+    "ram_only": true,
+    "isolated_network_namespace": true,
+    "idle_seconds": [
+      10,
+      60
+    ],
+    "real_vpn_peer": false,
+    "credentials_loaded": false,
+    "flashed": false,
+    "persistent_installation": false,
+    "autostart_modified": false,
+    "main_network_configuration_modified": false,
+    "abnormal_reboot_used": false
+  },
+  "artifacts": {
+    "qdc-ike-guard": {
+      "bytes": 75052,
+      "sha256": "042ddc5201c026fc30d8791c8ffacfdec083cf27a77ebb43610e5cb8a29ef90a"
+    },
+    "qdc-tun-probe": {
+      "bytes": 70940,
+      "sha256": "e946ddf812c73f75d08f3287ad4b078ab74a6701270672004cae47cb24ea511b"
+    },
+    "charon": {
+      "bytes": 1453620,
+      "sha256": "96bf484a445a1d9332a9614b231c5beeeb82bc47c8a9cf0aaf3bbc35642acf37"
+    },
+    "swanctl": {
+      "bytes": 906892,
+      "sha256": "0493bd368affea54ecf950701175ec6531c6d6de8c22b4889f7867a4ac81af7f"
+    },
+    "tun.ko": {
+      "bytes": 26664,
+      "sha256": "2b44764dc5bee73faab5671bc5575cb08cb08c8cb68854fb8ef1a85b5ca8637d"
+    },
+    "strongswan.conf": {
+      "bytes": 638,
+      "sha256": "cc99d9710154bdb0c9ebd65dd81ef85606354d1fb5104008d765469afffc852f"
+    }
+  },
+  "host_controller_sha256": "6257b6564a7b65b2790267776c8c44e89c4f59506ec31386c49b86a54b6de414",
+  "prior_stopped_attempt": {
+    "run": "IKE20261114A01",
+    "status": "stopped_at_memory_gate",
+    "client_uploaded": false,
+    "client_started": false,
+    "tun_loaded": false,
+    "available_before_kib": [
+      9664,
+      9668,
+      9668
+    ],
+    "upload_gate_kib": 12288,
+    "gate_sample_kib": 12144,
+    "sms_supervisor": {
+      "pid": 431,
+      "starttime": 813,
+      "restored": true
+    },
+    "sms_child_before": 460,
+    "sms_child_after": 1470,
+    "http_after": 200,
+    "kernel_identity_unchanged": true,
+    "cleanup_proof": "98-cleanup-proof.raw",
+    "USB_transfers": 1500,
+    "USB_errors": 0,
+    "controller_closed": true,
+    "network_configuration_unchanged": true,
+    "dns_unchanged": true,
+    "firewall_configuration_unchanged": true
+  },
+  "accepted_attempt": {
+    "run": "IKE20261114A02",
+    "status": "passed_idle_runtime",
+    "scope": "RAM-only isolated empty-client startup; no real VPN peer",
+    "upload_gate_samples_kib": [
+      12616,
+      12604,
+      12604
+    ],
+    "rounds": [
+      {
+        "stage": "40-idle-10s",
+        "charon_peak_kib": 888,
+        "cli_peak_kib": 524,
+        "min_available_kib": 9144,
+        "measurement": "full smaps + child wait4 rusage, sampled"
+      },
+      {
+        "stage": "41-idle-60s",
+        "charon_peak_kib": 888,
+        "cli_peak_kib": 524,
+        "min_available_kib": 9136,
+        "measurement": "full smaps + child wait4 rusage, sampled"
+      }
+    ],
+    "initial_memavailable_kib": [
+      9692,
+      9700,
+      9700
+    ],
+    "final_memavailable_kib": [
+      9964,
+      9972,
+      9968
+    ],
+    "usb_transfers": 4215,
+    "usb_errors": 0,
+    "stages_passed": 37,
+    "kernel_identity_unchanged": true,
+    "network_configuration_unchanged": true,
+    "dns_unchanged": true,
+    "firewall_configuration_unchanged": true,
+    "sms_supervisor_restored": true,
+    "sms_supervisor_pid": 431,
+    "sms_child_after": 3328,
+    "http_after": 200,
+    "pause_to_restore_request_seconds": 239.121737,
+    "pause_window_limit_seconds": 240,
+    "cleanup_proof": "98-cleanup-proof.raw",
+    "namespace_fd_proof": "89-namespace-node-cleanup.raw",
+    "controller_closed": true
+  },
+  "memory": {
+    "method": "full smaps to EOF every ~1 s; MemAvailable every ~250 ms; child wait4 ru_maxrss included",
+    "charon_idle_sampled_peak_kib": 888,
+    "cli_sampled_or_rusage_peak_kib": 524,
+    "observer_sampled_peak_kib": 132,
+    "charon_steady_sampled_rss_kib": 876,
+    "charon_steady_sampled_anonymous_kib": 232,
+    "lowest_sampled_memavailable_kib": 9136,
+    "budget_note": "Idle-only peaks under paused smsweb. No real IKE authentication or ESP workload. Do not add full RSS to tmpfs files; do not infer throughput/stability or simultaneous business coexistence."
+  },
+  "validation": {
+    "arm_vm": {
+      "status": "passed",
+      "device_executed": false,
+      "cases": [
+        "no_go",
+        "normal_cleanup",
+        "streamed_app_logs",
+        "early_exit_cleanup",
+        "kmsg_abort_cleanup",
+        "cli_timeout_cleanup",
+        "runtime_memory_abort",
+        "blocked_output_deadline",
+        "low_memory_refusal",
+        "supervisor_auto_resume",
+        "supervisor_manual_resume",
+        "original_network_unchanged",
+        "probe_create",
+        "probe_features",
+        "probe_log_gate",
+        "probe_no_go",
+        "probe_selftest",
+        "probe_traffic"
+      ]
+    },
+    "runtime_python_tests": 11,
+    "existing_ike_python_tests": 8,
+    "go_tests": 15,
+    "go_race": "passed count=1",
+    "go_vet": "passed",
+    "c_proc": "passed"
+  },
+  "cleanup": {
+    "owned_processes_absent": true,
+    "private_namespace_process_fd_mount_refs_absent": true,
+    "tun_unloaded_normally": true,
+    "dev_net_tun_absent": true,
+    "dev_net_originally_absent_and_removed_empty": true,
+    "ram_staging_absent": true,
+    "charon_runtime_directory_absent": true,
+    "sms_original_supervisor_resumed": true,
+    "sms_http_200": true,
+    "boot_id_kernel_taint_voice_modules_unchanged": true,
+    "address_routes_dns_firewall_unchanged": true,
+    "controllers_closed": true
+  },
+  "observations": [
+    "RMNET priority-3 unregister notices match NETDEV_UNREGISTER / NETDEV_UNREGISTER_FINAL source paths and ipsec0 teardown; no captured Oops/WARN/BUG/OOM or in-window sequence gap",
+    "One first-read Quectel erase-counter record precedes the driver-load timestamp by about 1200 seconds; not attributed to this operation",
+    "Device wall clock is in 1980; no clock adjustment performed. Certificate authentication needs valid time in a future test",
+    "Original IPv4 snapshot has no default route and resolv.conf is empty; no uplink/DNS changes performed",
+    "Pause-to-restore request span 239.12 seconds is close to the 240-second plan limit; future tests should split business pause windows with sufficient recovery margin"
+  ],
+  "limits": [
+    "No real endpoint negotiation or encrypted traffic on QDC507",
+    "No long run, reauthentication, IKE_SA rekey, restart persistence, throughput or business-coexistence validation",
+    "Sampling may miss short peaks; old-kernel rusage limitations retained",
+    "Kmsg sequence continuity applies within logger windows; no claim of continuous capture during all gaps"
+  ],
+  "local_logs": [
+    "ike-validation-local/runtime-logs/IKE20261114A01",
+    "ike-validation-local/runtime-logs/IKE20261114A02",
+    "ike-validation-local/logs/runtime-tools-vm-6"
+  ],
+  "raw_log_sha256": {
+    "events.jsonl": "3292373f6f3977dac34758fe8938c1d1ac2828bb08a2d42aac4196a2270c92a4",
+    "usb-transfers.jsonl": "7055dd8cb4211f5014c2ad2b018a3f48ea1af7b5496357fcc9ca4a1264163974",
+    "00-readonly.raw": "2641e3912044bfe6f10c34072b93dade648198b4c24b485438c670cf46420884",
+    "40-idle-10s.raw": "66e9092ec4d4eeac7a37717d9de2588390891b9eeeff09bdefb5eb5e8924e739",
+    "41-idle-60s.raw": "631d4bf1525fcd80c6a2114a9628db8afbbef437def2c849fb18cb7b9e91ff3d",
+    "80-unload-tun.raw": "b6c7df454e2b30eb86df2ad268a340bd1d0951a541c87a42228e907dbe3580ff",
+    "87-restore-sms.raw": "efd2045ed5b171df2bfc93da44919af50f8cb86ca5fb8e5353937f683b3d4629",
+    "89-namespace-node-cleanup.raw": "c3bc85e61faf22ead0cc7fdd3cf15f3ac2e0661478d68dcc169a539b4b78ade7",
+    "98-cleanup-proof.raw": "71cc2476c82c19869eb5961005bc4803b0133b0986fdd5a0479ec35a277f923a",
+    "99-readonly-after.raw": "1604f7e0f9453409c29ad4bcfec35d63af11946f331acacf0f70c58abc45b647"
+  }
+}
