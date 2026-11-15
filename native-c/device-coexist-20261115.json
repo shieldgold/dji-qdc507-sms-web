@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "run_id": "CN20261115I01",
+  "date": "2026-11-15",
+  "device_executed": true,
+  "firmware_flashed": false,
+  "boot_autostart_modified": false,
+  "original_restored": true,
+  "client_left_installed": false,
+  "real_sms_sent": false,
+  "real_call_placed": false,
+  "real_apns_tested": false,
+  "seconds": 30.105,
+  "encrypted_ping_pairs": 10,
+  "local_sms_http_success": 10,
+  "sim_ready_during_and_after": true,
+  "admission_samples_kib": [
+    12404,
+    12404,
+    12404
+  ],
+  "thresholds_kib": {
+    "admission": 12288,
+    "runtime_start": 8192,
+    "absolute_floor": 6144,
+    "max_drop": 3072
+  },
+  "memory": {
+    "runtime_baseline_kib": 9576,
+    "minimum_available_kib": 8716,
+    "maximum_observed_drop_kib": 860,
+    "sms_rss_peak_kib": 700,
+    "sms_pss_peak_kib": 696,
+    "sms_anonymous_peak_kib": 196,
+    "sms_samples": 29,
+    "charon_rss_peak_kib": 1456,
+    "cli_rss_peak_kib": 668,
+    "post_restore_min_available_kib": 8744
+  },
+  "identity": {
+    "supervisor_pid": 428,
+    "supervisor_start": 826,
+    "c_pid": 3487,
+    "c_start": 10182322,
+    "c_exec_dev": 16,
+    "c_exec_ino": 4122,
+    "original_dev": 16,
+    "original_ino": 898,
+    "restored_go_pid": 3562,
+    "restored_go_start": 10189986
+  },
+  "artifacts_sha256": {
+    "smsweb_c": "8a458dde9f2e2b2a37324f979bc1cc501e18519ae237fa330b5c29dee3d955a0",
+    "guard": "6b20d2ecf30c45ffef6db49a74198dad4e8e90dcddfb183c98bec3f02cd9bb99",
+    "swap": "ec452f757488dd7a25863a5b536cddea2f5bd92a0f25c050e6d0c0ba1a824a3c"
+  },
+  "restoration": {
+    "routes_same": true,
+    "addresses_same": true,
+    "firewall_same": true,
+    "original_and_start_and_previous_hashes_same": true,
+    "business_files_sha256_same": {
+      "auth": true,
+      "messages": true,
+      "push-state": true,
+      "call-attempts": true,
+      "clock": true,
+      "traffic": false
+    },
+    "traffic_update_expected": true,
+    "six_private_backups_verified": true,
+    "clock_before_continue": true,
+    "single_original_go_process": true,
+    "temporary_directories_absent": true,
+    "tun_unloaded_and_created_node_removed": true,
+    "routeros_test_peer_gone": true,
+    "boot_config_taint_same": true
+  },
+  "usb": {
+    "trace_records": 5311,
+    "errors": 0,
+    "short_writes": 0,
+    "canary_rounds": 3,
+    "canary_seconds_each": 30
+  },
+  "private_evidence_root": "native-c-build/device-live-CN20261115I01",
+  "evidence_sha256": {
+    "23-client-memory-gate.raw": "431b109d49106f15b307acf556a617306ff5d7f2f394994323768ebfa4f37c5d",
+    "23a-state-before.raw": "ea0fd09ce84eae6c9eae0a1f2b7a4750175c9b1b03b9c4a2fb410170f9255323",
+    "23z-state-recheck.raw": "b48f7789a9960c7834d72faaa6b29861d48a4ad2a2dfe858cf932707a5f59d8d",
+    "24e-C-copy.raw": "feb5cbbedeb8bffc4a5bc1e82f93593274088dc46ed8ae696b302197c36e6c98",
+    "28-fresh-binding.raw": "0c7b0188fc93539a3882f88aa8d8ca4e81237e27a2a8eb4cccab4f85add6acd8",
+    "29b-swap-hold.raw": "2ccc9f4f00466488ad11dce56ed6f22dc0a20fd7bdaebd89b81a3fc59aad9a9d",
+    "30-load-tun.raw": "124b89903f405c427454a82c7b7337b8a30412983a5da9b4378323a007da297f",
+    "31-check-tun.raw": "7e9ae75582e8c1b5637e65ec3fa49db0afdff8247fec460bec7a77740905e2c5",
+    "40-coexist.raw": "48da7f06f7a6ef14cc12a7590dc5be374fe1ed1f0b9eab230e22701d5c0f088f",
+    "50-c-process-proof.raw": "800020738bf7601ff33b67867fac22cb4b465ceff2e5a9f5da14f2203ce0d8e4",
+    "70-stop-swap-and-restore.raw": "e6e5dad862e6ecc4f5ac8e03dac78c4c0a6f93c217cb800715da852a08eae56f",
+    "80-unload-tun.raw": "138d3b9dfd95beaa5077ac1f22bbabc50dbf38f345cd0484362c04012b268719",
+    "85-release-client-files.raw": "c923543f93753e79f34b597e84710f1a7ab698a3727efddeedc4c93e348ebe28",
+    "86-post-restore-log.raw": "d8fb7b01b5aaed1a120057381a64432276f85625a2c0119180a5976add6f20bb",
+    "87-clean-sms-ram-and-node.raw": "a202cc30b1a051b75913b6a30588bba314c3388522bb143bb5edfa80b22f62df",
+    "88-original-and-state-readback.raw": "1d81fccc6ba8c192a32324329ffd2cb19ec145d1d9c2471d78deb9d8cfbe8424",
+    "90-clean-owned-files.raw": "527fba422ef98380f836a30a724abe7293de6a1c43226eaff923826b2b346ac6",
+    "99-readonly-after.raw": "8a6e7e2c0141e669e3a937557a111f6bc047ee63b8ff7c2ff3ae75c1626da7fb",
+    "99c-no-residues.raw": "1f80feaff454fe30c3bca979f9fdf76f0347c568070bb16f72d6087aca918f48",
+    "events.jsonl": "088c67051380835b4ae5f50f26f7b6d09bf53a769b54100a456f1c6ec2ce7667",
+    "usb-transfers.jsonl": "84266f5a8ca9bea2e71757b5346fc02cba741373b3a055aaf4a263332f72aa18"
+  },
+  "prior_attempt": {
+    "run_id": "CN20261115H01",
+    "result": "stopped_before_bind_at_root_parent_zero",
+    "original_restored": true,
+    "candidate_and_client_files_removed": true
+  },
+  "fix_commit": "cca2fd6956efa609160ffc721b31d3f3e4fff19e"
+}

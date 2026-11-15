@@ -2,7 +2,7 @@
 
 本目录提供独立的 C11/POSIX 后端，复用 `../web/` 原生 HTML/CSS/JavaScript。模块上不需要 Go、Node.js 或前端框架运行时。现有 Go 源码和构建入口保留。
 
-这是经过电脑与隔离 ARM 实验验证的候选实现。生成二进制不表示已安装到 QDC507；本轮没有上传模块、写固件、改启动文件、发送真实短信/通知或拨打真实电话。
+这是经过电脑、隔离 ARM 实验和一次 QDC507 受控临时共存测试的候选实现。实机完成 30.105 秒、10 组 VPN 加密 ping 与本地短信 HTTP，C 短信 RSS 采样最高 700 KiB；随后已恢复原 Go 服务并清理候选。详见 [实机验收记录](DEVICE_COEXIST_2026-11-15.zh-CN.md)。未刷机、改启动文件、发送真实短信/通知或拨打真实电话。
 
 ## 功能和接口
 
@@ -52,7 +52,7 @@ Go 仅用于兼容性对照，不进入 C 服务。测试包括公共内存/文�
 
 四个前端原文件另通过原项目的 13 项 Node 测试。本轮最终结果、体积/内存和验收范围见 [RESULT_2026-11-15.zh-CN.md](RESULT_2026-11-15.zh-CN.md)。
 
-ARM 隔离实验入口位于 [../tools/native-c-validation](../tools/native-c-validation/README.zh-CN.md)。它复用原完整短信/16 线程 charon 夹具，保护阈值不变，不接触 USB 或 WAN。真实模块的语音、APNs、蜂窝和 VPN 性能需要后续实机验收，不能由回环或通用内核结果代替。
+ARM 隔离实验入口位于 [../tools/native-c-validation](../tools/native-c-validation/README.zh-CN.md)。它复用原完整短信/16 线程 charon 夹具，保护阈值不变，不接触 USB 或 WAN。真实模块另已通过上述短窗口蜂窝 VPN 共存；实际语音、APNs、长时稳定性和性能仍需单独验收，不能由回环或短窗口结果代替。
 
 ## 运行边界
 
