@@ -1,0 +1,155 @@
+{
+  "source_commit": "45ff2e40681759a9492298636651fa3cb70ed3e7",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/auth/status",
+      "auth_required": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/push/status",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/push/register",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/push/test",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/time",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/maintenance/rollback",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/setup",
+      "auth_required": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "auth_required": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/browser/ticket",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/browser/redeem",
+      "auth_required": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "auth_required": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/change",
+      "auth_required": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/overview",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/diagnostics",
+      "auth_required": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/export",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/restore",
+      "auth_required": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/state",
+      "auth_required": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/send/status",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/send",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/delete",
+      "auth_required": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/sim",
+      "auth_required": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/sim/binding",
+      "auth_required": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/calls",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/calls/dial",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/calls/answer",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/calls/hangup",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/calls/dtmf",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/calls/audio",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/sim/unlock",
+      "auth_required": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/sim/retry",
+      "auth_required": true
+    }
+  ]
+}

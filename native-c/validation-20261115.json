@@ -1,0 +1,343 @@
+{
+  "status": "passed",
+  "date": "2026-11-15",
+  "device_executed": false,
+  "scope": "host and isolated ARM VM; synthetic modem/certificates; no USB, physical module, RouterOS or Apple endpoint",
+  "base_commit": "45ff2e40681759a9492298636651fa3cb70ed3e7",
+  "binary": {
+    "name": "smsweb-c-armv7",
+    "bytes": 1005284,
+    "sha256": "8a458dde9f2e2b2a37324f979bc1cc501e18519ae237fa330b5c29dee3d955a0",
+    "text_bytes": 983732,
+    "data_bytes": 19056,
+    "bss_bytes": 12616,
+    "elf32": true,
+    "eabi": 5,
+    "soft_float": true,
+    "static": true,
+    "interpreter": false,
+    "dynamic_needed": false
+  },
+  "go_comparator": {
+    "bytes": 5550232,
+    "sha256": "805aa0ef15099af06568cf1cb18fd4e8062c8df16a517766005e3272da6dce8f",
+    "go": "1.23.12",
+    "gogc": 20,
+    "soft_target_mib": 12
+  },
+  "size_reduction_percent": 81.88753190857608,
+  "frontend": {
+    "files": {
+      "index.html": {
+        "bytes": 12026,
+        "sha256": "de1fa7eb4805f90b7953da1697b47822cc381a46d8c43238129b5460fe169d3c"
+      },
+      "style.css": {
+        "bytes": 14608,
+        "sha256": "99199ceca61c3f95b882f0c5204a85c8384fd10bdebe6e928ab3432e6764df69"
+      },
+      "model.js": {
+        "bytes": 2233,
+        "sha256": "4c90d3d1124a44b3d9b9fd119df46ef7eaeeff97752a1c99417d73b8c3080ca4"
+      },
+      "app.js": {
+        "bytes": 26784,
+        "sha256": "70efa0867f91658006dd9e43cd296076246658eaa50c95443d20d439d476be18"
+      }
+    },
+    "bytes": 55651,
+    "unchanged": true,
+    "tests_passed": 13
+  },
+  "host_validation": {
+    "asan_ubsan_full_suite": true,
+    "api_routes": 30,
+    "service_scenarios": [
+      "ready",
+      "pin"
+    ],
+    "outgoing_pdu_parity_cases": 2376,
+    "incoming_pdu_parity_cases": 6000,
+    "incoming_mismatches": 0,
+    "go_c_auth_bidirectional": true,
+    "tls_http2_dns_apns_loopback": true,
+    "pcm_loopback": true,
+    "store_messages": 300,
+    "store_poll_iterations": 2000,
+    "steady_store_pool_bytes": 261504,
+    "fault_injection": [
+      "AT closed/byte limits",
+      "AT stopping under 1s",
+      "call intent OOM",
+      "restore index OOM",
+      "traffic OOM",
+      "atomic write uncertainty"
+    ],
+    "linux_cold_rng_asan_ubsan": true
+  },
+  "arm_sms": {
+    "kernel": "3.18.44",
+    "memory_mib": 48,
+    "online_cpus": 1,
+    "network": "none; guest loopback only",
+    "ready": {
+      "startup": {
+        "rss_kib": 888,
+        "pss_kib": 884,
+        "anonymous_kib": 160,
+        "file_rss_kib": 728,
+        "maps": 22,
+        "mem_available_kib": 34232,
+        "private_dirty_kib": 880,
+        "private_clean_kib": 0,
+        "shared_dirty_kib": 8,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 888
+      },
+      "poll": {
+        "rss_kib": 972,
+        "pss_kib": 968,
+        "anonymous_kib": 180,
+        "file_rss_kib": 792,
+        "maps": 23,
+        "mem_available_kib": 34216,
+        "private_dirty_kib": 964,
+        "private_clean_kib": 0,
+        "shared_dirty_kib": 8,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 972
+      },
+      "http": {
+        "rss_kib": 972,
+        "pss_kib": 968,
+        "anonymous_kib": 180,
+        "file_rss_kib": 792,
+        "maps": 23,
+        "mem_available_kib": 34188,
+        "private_dirty_kib": 964,
+        "private_clean_kib": 0,
+        "shared_dirty_kib": 8,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 972
+      },
+      "pressure": {
+        "rss_kib": 972,
+        "pss_kib": 968,
+        "anonymous_kib": 180,
+        "file_rss_kib": 792,
+        "maps": 23,
+        "mem_available_kib": 32132,
+        "private_dirty_kib": 964,
+        "private_clean_kib": 0,
+        "shared_dirty_kib": 8,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 972
+      },
+      "released": {
+        "rss_kib": 972,
+        "pss_kib": 968,
+        "anonymous_kib": 180,
+        "file_rss_kib": 792,
+        "maps": 23,
+        "mem_available_kib": 34180,
+        "private_dirty_kib": 964,
+        "private_clean_kib": 0,
+        "shared_dirty_kib": 8,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 972
+      }
+    },
+    "pin_peak_observed_rss_kib": 984,
+    "go_ready": {
+      "startup": {
+        "rss_kib": 6016,
+        "pss_kib": 6016,
+        "anonymous_kib": 1436,
+        "file_rss_kib": 4580,
+        "maps": 12,
+        "mem_available_kib": 28332,
+        "private_dirty_kib": 6012,
+        "private_clean_kib": 4,
+        "shared_dirty_kib": 0,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 6016
+      },
+      "poll": {
+        "rss_kib": 6180,
+        "pss_kib": 6180,
+        "anonymous_kib": 1472,
+        "file_rss_kib": 4708,
+        "maps": 12,
+        "mem_available_kib": 28292,
+        "private_dirty_kib": 6176,
+        "private_clean_kib": 4,
+        "shared_dirty_kib": 0,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 6180
+      },
+      "http": {
+        "rss_kib": 6240,
+        "pss_kib": 6240,
+        "anonymous_kib": 1496,
+        "file_rss_kib": 4744,
+        "maps": 12,
+        "mem_available_kib": 28204,
+        "private_dirty_kib": 6236,
+        "private_clean_kib": 4,
+        "shared_dirty_kib": 0,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 6240
+      },
+      "pressure": {
+        "rss_kib": 6248,
+        "pss_kib": 6248,
+        "anonymous_kib": 1504,
+        "file_rss_kib": 4744,
+        "maps": 12,
+        "mem_available_kib": 26140,
+        "private_dirty_kib": 6244,
+        "private_clean_kib": 4,
+        "shared_dirty_kib": 0,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 6248
+      },
+      "released": {
+        "rss_kib": 6276,
+        "pss_kib": 6276,
+        "anonymous_kib": 1532,
+        "file_rss_kib": 4744,
+        "maps": 12,
+        "mem_available_kib": 28164,
+        "private_dirty_kib": 6272,
+        "private_clean_kib": 4,
+        "shared_dirty_kib": 0,
+        "shared_clean_kib": 0,
+        "peak_observed_rss_kib": 6276
+      }
+    },
+    "same_fixture_binary": true,
+    "same_entropy_preflight": true
+  },
+  "arm_coexist": {
+    "seconds": 30.106,
+    "ping_pairs": 10,
+    "http_pairs": 10,
+    "charon_threads": 16,
+    "sms_rss_kib": 964,
+    "charon_rss_kib": 1744,
+    "guard_rss_kib": 156,
+    "cli_peak_observed_kib": 844,
+    "min_available_kib": 26544,
+    "same_sms_identity_after": true,
+    "clock_before_supervisor_continue": true,
+    "children_reaped": true,
+    "routes_addresses_restored": true,
+    "guard_sha256": "eb5664016154d69caf5c35f26443468fbe916d6fe9d49181f2c3d5fec7566763"
+  },
+  "stops_unchanged": {
+    "admission_kib": 8192,
+    "absolute_floor_kib": 6144,
+    "max_drop_kib": 3072,
+    "serial_cap_bytes": 1048576
+  },
+  "arm_tls": {
+    "status": "passed",
+    "test_binary_sha256": "4fa47ca4932f34d92d7d303581febe3e818e6a5d880ec230a4fc2394a11faf6f",
+    "cases": {
+      "tls12": {
+        "outcome": "accepted",
+        "elapsed_ms": 310,
+        "min_available_kib": 34212,
+        "peer_rss_kib": 640,
+        "peer_pss_kib": 636,
+        "client_rss_kib": 652,
+        "client_pss_kib": 652,
+        "version": "TLSv1.2",
+        "status": 200,
+        "http2": true,
+        "response_body": "{\"arm\":true}",
+        "date": "Sun, 15 Nov 2026 08:17:26 GMT"
+      },
+      "tls13": {
+        "outcome": "accepted",
+        "elapsed_ms": 188,
+        "min_available_kib": 34160,
+        "peer_rss_kib": 664,
+        "peer_pss_kib": 660,
+        "client_rss_kib": 660,
+        "client_pss_kib": 660,
+        "version": "TLSv1.3",
+        "status": 200,
+        "http2": true,
+        "response_body": "{\"arm\":true}",
+        "date": "Sun, 15 Nov 2026 08:17:26 GMT"
+      },
+      "wrongname": {
+        "outcome": "rejected",
+        "elapsed_ms": 89,
+        "min_available_kib": 34160,
+        "peer_rss_kib": 632,
+        "peer_pss_kib": 628,
+        "client_rss_kib": 648,
+        "client_pss_kib": 648,
+        "version": "TLSv1.2",
+        "certificate_alert_description": 42
+      },
+      "wrongca": {
+        "outcome": "rejected",
+        "elapsed_ms": 60,
+        "min_available_kib": 34160,
+        "peer_rss_kib": 564,
+        "peer_pss_kib": 560,
+        "client_rss_kib": 32,
+        "client_pss_kib": 21,
+        "version": "TLSv1.2",
+        "certificate_alert_description": 48
+      }
+    },
+    "observations": "Independent TLS test process, 20ms sampled RSS/PSS; not production daemon absolute peak",
+    "network": "no NIC; guest loopback only"
+  },
+  "production_source_sha256": {
+    "native-c/src/at.c": "edb2364596b1a31a739ff4028232431b52fb90e1aa3531628e79ebbf1d3f8a50",
+    "native-c/src/audio.c": "349a1616081984938965668c024d7a665b234e47b893d3546bfe3eedc213ef6f",
+    "native-c/src/auth.c": "16c87f206dfb6890e9c44a08df9c53eb0e597d226095e90453b963838ecbf31a",
+    "native-c/src/backup.c": "8a0bbb1bfa020e3b7e7b09dcfa3a00f164db23fd9494d5646a5f218c0327bf7b",
+    "native-c/src/calls.c": "f3f12ec55a103f3b86b722c375c2a609528f1b012d13d385e439b7311b4fb063",
+    "native-c/src/clock.c": "a68516bd83bfbb5169460f150663a53d414d255fbf68ee86858f46440dc29236",
+    "native-c/src/common.c": "047dca7b64dfdb590ff71156605124c342e1affcf573a0af1d2e228d687ad862",
+    "native-c/src/crypto.c": "1c9365d96a97922200a5ea54de475027e771e3aa0939efa85c946fb84d1df157",
+    "native-c/src/dispatch.c": "783bfa017509e30ae76049c6fc74cba2373d115c794d3ae5e67fa95ab5336588",
+    "native-c/src/domain.c": "c3178bbe754f51916a0040b82550a4ded52a054feddb162af7869be640778a9a",
+    "native-c/src/http.c": "00465783412456d80da69085637085013aa1016e422f9b7bc1284b8a6136e02e",
+    "native-c/src/main.c": "a093f63de4c45ae2c93b73857fa609e35a3404ae62ea4b5e62f3b7f7a5c1a88d",
+    "native-c/src/monitor.c": "beeb5574f193282af7cf933da724f97ab8ab00fe42aeb2a4e265eef6ea92c550",
+    "native-c/src/outbox.c": "e4bf314c151d83162a8ff6fc2a0a578e1b21611c43192c15a245c0d567658dfc",
+    "native-c/src/pdu.c": "2c5547daa68ff92ffefa312162798a2e6b24358b472c92077df4332dcdc6f25d",
+    "native-c/src/pin.c": "c3a12cac1349ea558b5b112ab6004535dd81a46487378f5146817aae0f694039",
+    "native-c/src/push.c": "cbf262e1f8daf777b0a587b1ed6f43eb8212c6546b1874907e5f31145fc4b911",
+    "native-c/src/store.c": "dde71ed9a06269c2ca97936393f6aa34191532b6446d14d9efad6a91248f5b5a",
+    "native-c/src/tls.c": "1b22ff9ea393be1db1674cec4b6e52f2bbc79022cf63e8e5971e56a277e65b6f",
+    "native-c/src/traffic.c": "145d108642970ff232bb0048d948d8398d8e32d2b03a61eb03091322e6d4c0a9",
+    "native-c/include/qdc.h": "e4e9b6d5a9f4d79e64308c98b213c5a0ea63b4d45d8983c663ded9a78a0d35aa",
+    "native-c/include/qdc_audio.h": "e492ba3cdd5d74aa49bbea070d93b3f303a631695219f645305dd11ea734bb5c",
+    "native-c/include/qdc_auth.h": "211552e8f4140a5d226a29d79cf8235c023ca031c174af926dc5eee633886409",
+    "native-c/include/qdc_domain.h": "d87dbfc59ae4ab961aff93e47317157b2e2ae01436dc2f66334de7527cd01e3c",
+    "native-c/include/qdc_monitor.h": "9b219b264b88bef4205f3bd355a44c98b18c74a663fbf904f8f24a4bd8914fd0",
+    "native-c/include/qdc_push.h": "c1374c48a5772d4b05cdae31eef17f3172edcdabfd3de782600f54a50584b540",
+    "native-c/config/mbedtls-user.h": "3026e5f0b74c173e752da2d6ed67529f42ec4d6be87b0d772b3d62ec135c473b",
+    "native-c/deps.lock.json": "71b60d498c5bb0c4a454a26092f9c8b49ba6a2d1d93f48a369f4ab14bbdf418f",
+    "native-c/Makefile": "8bd9a93a2503300dd04f23808c100b6401ca960662b87fbabee599a384c3c63f",
+    "native-c/tools/build_deps.py": "2f7033baac432e7afdaa11d416dd20cf712cda6bee4c69471b04c2944aab0fad",
+    "native-c/tools/embed_web.py": "b0943a513f897fab0648c9d6680c486d41cb92087c41415a0581b7d3e79256ea"
+  },
+  "test_reports_relative_to_private_lab": [
+    "native-c-build/host/release-verification.log",
+    "native-c-build/logs/native-c-final-ready-1/result.json",
+    "native-c-build/logs/native-c-final-pin-1/result.json",
+    "native-c-build/logs/go-memory-entropy-ready-1/result.json",
+    "native-c-build/arm-service/final/validation-summary.json",
+    "sms-opt-build/newguard-integration-base/native-c-build/combined-logs/native-c-final-1/result.json",
+    "native-c-build/arm-tls/matrix-04/result.json"
+  ]
+}

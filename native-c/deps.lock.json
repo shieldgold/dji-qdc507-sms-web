@@ -1,0 +1,29 @@
+{
+  "mbedtls": {
+    "version": "3.6.7",
+    "url": "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.7/mbedtls-3.6.7.tar.bz2",
+    "sha256": "a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6",
+    "checksum_url": "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.7/mbedtls-3.6.7-sha256sum.txt",
+    "root": "mbedtls-3.6.7",
+    "license": "Apache-2.0 OR GPL-2.0-or-later",
+    "support_note": "3.6 LTS at least March 2027; TLS/X.509 maintenance transition from April 2027",
+    "maintenance_url": "https://lists.trustedfirmware.org/archives/list/mbed-tls@lists.trustedfirmware.org/thread/YPIGCB7WN6GCHOGEGKOJXUYAP7OK527W/"
+  },
+  "nghttp2": {
+    "version": "1.71.0",
+    "url": "https://github.com/nghttp2/nghttp2/releases/download/v1.71.0/nghttp2-1.71.0.tar.xz",
+    "sha256": "c0f55121d88650e4b9227aec28cebaf664d2417ca60fe70be0f8d38829f52116",
+    "checksum_url": "https://github.com/nghttp2/nghttp2/releases/download/v1.71.0/checksums.txt",
+    "root": "nghttp2-1.71.0",
+    "license": "MIT"
+  },
+  "yyjson": {
+    "version": "0.13.0",
+    "commit": "6447536015f3d600f3d65323b10976103b337ca7",
+    "url": "https://codeload.github.com/ibireme/yyjson/tar.gz/6447536015f3d600f3d65323b10976103b337ca7",
+    "sha256": "13d53411c9d818836a2dc0b3f4be40c34ee4e0fcd21ff903e0aebbfd52e9e08d",
+    "checksum_note": "Locally computed archive SHA256; upstream has no separate checksum file. Commit is official 0.13.0 tag target.",
+    "root": "yyjson-6447536015f3d600f3d65323b10976103b337ca7",
+    "license": "MIT"
+  }
+}
