@@ -1,5 +1,7 @@
 # IKEv2 实机临时测试预备工具
 
+2026-11-15 的[准入工具内存优化与实机顺序](ADMISSION_MEMORY_2026-11-15.zh-CN.md)新增 `prepare_coexist.py prepare --native-admission`。它要求以当前源码重建主机控制器，使用受限 `op=admission` 直接执行原生采样，三轮 canary 后回收探针、达标后重新暂存并计入模型。默认 12 MiB 和原运行时基线/停止条件不变。`op=backup` 为六份指定业务状态提供只读、大小/哈希绑定的私有 Base64 备份，内容不进入阶段日志；残留 USB 包也只记长度元数据。
+
 先阅读 [完整方案](../TEMP_RUNTIME_TEST_PLAN.zh-CN.md)。这些源码和电脑端预备包不代表获得实机执行授权。本次构建、打包和 QEMU 检查都没有连接模块。
 
 2026-11-14 新增 [短信与 VPN 共存测试方案](../COEXIST_TEST_PLAN.zh-CN.md)：`build-coexist.sh` 独立输出电脑 `coexist-build`，`prepare_coexist.py prepare` 生成未绑定包，缺少共存启动卡；后续必须使用当轮新鲜身份执行电脑端 `bind` 才会生成卡。共存接口为 `coexist RAM_ROOT RUN_COEX 30 TARGET VIP`，固定 30 秒、默认 12 MiB 准入、6 MiB/下降超过 3 MiB 停止线。`http-once LOCAL_IPV4` 仅检查本机 8787 的网页入口；`resume-clock` 恢复时钟后再 CONT 原监管。电脑工具准备及隔离实验已完成，实机准入结果见下文。

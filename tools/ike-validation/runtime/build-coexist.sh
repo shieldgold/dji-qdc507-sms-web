@@ -28,6 +28,11 @@ docker run --rm --network none --platform linux/amd64 \
   gcc -std=gnu99 -O2 -Wall -Wextra -Werror -DQDC_MEM_TEST \
       coexist.c http_probe.c proc.c ../lab_mem.c test_coexist.c -o /out/test-coexist
   /out/test-coexist
+  gcc -std=gnu99 -O2 -Wall -Wextra -Werror -DQDC_MEM_TEST \
+      -Wl,--wrap=memory_available,--wrap=nanosleep,--wrap=__nanosleep_time64 \
+      test_admission.c proc.c coexist.c http_probe.c icmp_probe.c ../lab_mem.c ../../tun-validation/runtime/log_watch.c \
+      -o /out/test-admission
+  /out/test-admission
   gcc -std=gnu99 -O2 -Wall -Wextra -Werror \
       http_probe.c test_http_probe_main.c -o /out/test-http-probe
   gcc -std=gnu99 -O2 -Wall -Wextra -Werror -DQDC_MEM_TEST \
@@ -60,6 +65,9 @@ manifest = {'guard_sha256': artifact['sha256'], 'guard_bytes': artifact['bytes']
             'device_executed': False, 'compiler': 'GCC 10.2.1, patched musl 1.2.6; ARM userspace only',
             'coexist_seconds': 30, 'default_admission_kib': 12288,
             'runtime_floor_kib': 6144, 'runtime_max_drop_kib': 3072}
+manifest['native_admission'] = {'samples': 3, 'interval_seconds': 5,
+    'thresholds_kib': [12288, 11776], 'deadline_seconds': 20, 'kill_grace_seconds': 3,
+    'framing': 'QDC-markers-v1'}
 (out/'build.json').write_text(json.dumps(manifest, indent=2)+'\n')
 print(json.dumps({'guard_sha256': artifact['sha256'], 'guard_bytes': artifact['bytes'], 'device_executed': False}))
 PY

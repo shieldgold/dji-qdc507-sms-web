@@ -617,10 +617,42 @@ static int resume(pid_t pid, unsigned long long start, int seconds, int restore_
     if (kill(pid, SIGCONT)) return 1;
     puts("RESUME_SENT verify_sms_health_separately=1"); return rc;
 }
+static int admit_client(long required, const char *run, const char *stage) {
+    /* Same three samples and five-second waits as the reviewed shell gate.
+     * Direct exec keeps no shell parent, awk/sleep child or extra RAM binary. */
+    signal(SIGALRM, hard_deadline);
+    alarm(20);
+    if (run) printf("__QDC_%s_%s_BEGIN__\n", run, stage);
+    int rc = 1;
+    double began = monotonic();
+    for (int i = 1; i <= 3; i++) {
+        if (interrupted) goto done;
+        long available = memory_available();
+        if (interrupted) goto done;
+        printf("MEM_GATE available_kib=%ld required_kib=%ld sample=%d elapsed=%.3f pid=%ld\n",
+               available, required, i, monotonic()-began, (long)getpid());
+        if (available < required || ferror(stdout)) goto done;
+        struct timespec delay = {5, 0};
+        if (nanosleep(&delay, NULL) || interrupted) goto done;
+    }
+    printf("CLIENT_ADMISSION_READY samples=3 interval_seconds=5 required_kib=%ld\n", required);
+    if (!ferror(stdout)) rc = 0;
+done:
+    if (interrupted || ferror(stdout)) rc = 1;
+    if (run) printf("\n__QDC_%s_%s_END__ RC=%d\n", run, stage, rc);
+    alarm(0);
+    return ferror(stdout) ? 1 : rc;
+}
 int main(int argc, char **argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     signal(SIGCHLD, SIG_DFL);
     signal(SIGTERM, signal_stop); signal(SIGINT, signal_stop); signal(SIGHUP, signal_stop); signal(SIGPIPE, signal_stop);
+    if ((argc == 3 || argc == 5) && !strcmp(argv[1], "admit-client")) {
+        if (strcmp(argv[2], "12288") && strcmp(argv[2], "11776")) return 64;
+        if (argc == 5 && (!identifier(argv[3]) || !identifier(argv[4]))) return 64;
+        return admit_client((long)number(argv[2]), argc == 5 ? argv[3] : NULL,
+                            argc == 5 ? argv[4] : NULL);
+    }
     if (argc == 3 && !strcmp(argv[1], "http-once")) return qdc_http_once(argv[2]);
     if (argc == 2 && !strcmp(argv[1], "selftest")) {
         struct proc_id id; struct qdc_smaps sm;
@@ -658,6 +690,6 @@ int main(int argc, char **argv) {
         if (!pid || pid > INT_MAX || !start || !seconds || seconds > 300) return 64;
         return resume((pid_t)pid, start, (int)seconds, !strcmp(argv[1], "resume-clock"));
     }
-    fputs("usage: qdc-ike-guard selftest | describe PID | identity PID START EXE | http-once LOCAL_IPV4 | idle RAM_ROOT TOKEN 1..60 | connect RAM_ROOT TOKEN 1..60 TARGET VIP | coexist RAM_ROOT RUN_COEX 30 TARGET VIP | resume[-clock] SUP_PID START 1..300\n", stderr);
+    fputs("usage: qdc-ike-guard selftest | admit-client 12288|11776 [RUN STAGE] | describe PID | identity PID START EXE | http-once LOCAL_IPV4 | idle RAM_ROOT TOKEN 1..60 | connect RAM_ROOT TOKEN 1..60 TARGET VIP | coexist RAM_ROOT RUN_COEX 30 TARGET VIP | resume[-clock] SUP_PID START 1..300\n", stderr);
     return 64;
 }

@@ -33,17 +33,43 @@ class CoexistBundleTests(unittest.TestCase):
                 'guardian': {'pid': 2001, 'start': 12346, 'exe': f'/run/qdc-tun-{run}/qdc-ike-guard',
                     'argv': [f'/run/qdc-tun-{run}/qdc-ike-guard', 'resume-clock', '431', '813', '300']}}
 
-    def bundle(self, root, *, admission=12288, approval=None):
+    def bundle(self, root, *, admission=12288, approval=None, native=False):
         from prepare import build_bundle
         sources, pins = test_prepare.BundleTests().fixture(root)
         connection = {'mode': 'coexist', 'target': '10.99.0.1', 'vip': '10.88.0.2',
             'transport': 'direct', 'peer_address': '10.77.0.1',
             'files': {n: b'lab-only' for n in ('client.key', 'client.pem', 'ca.pem', 'swanctl.conf')}}
         out = root/'bundle'
-        kwargs = {'low_copy': True, 'client_admission_kib': admission}
+        kwargs = {'low_copy': True, 'client_admission_kib': admission, 'native_admission': native}
         if approval is not None: kwargs['coexist_admission_approved_for'] = approval
         manifest = build_bundle(sources, pins, out, 'LAB01', connection, **kwargs)
         return out, manifest
+
+    def test_native_sampler_preserves_default_and_explicit_exception_binding(self):
+        m = self.load()
+        for admission, approval in ((12288, None), (11776, 'LAB01')):
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                bundle, manifest = self.bundle(root, admission=admission,
+                                                approval=approval, native=True)
+                bound = m.bind_bundle(bundle, self.snapshot(), root/'bound')
+                self.assertEqual(bound['client_admission_sampler'], 'native-direct')
+                self.assertEqual(bound['preflight_kib'], admission)
+                self.assertEqual(bound.get('admission_exception'), manifest.get('admission_exception'))
+
+    def test_native_sampler_refuses_rehashed_gate_lowering(self):
+        m = self.load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); bundle, manifest = self.bundle(root, native=True)
+            gate_path = bundle/'cards/23-client-memory-gate.json'
+            gate = json.loads(gate_path.read_text())
+            gate['min_available_kib'] = 11776
+            gate_path.write_text(json.dumps(gate)+'\n')
+            manifest['cards_sha256'][gate_path.name] = hashlib.sha256(gate_path.read_bytes()).hexdigest()
+            (bundle/'manifest.json').write_text(json.dumps(manifest)+'\n')
+            with self.assertRaises(ValueError):
+                m.bind_bundle(bundle, self.snapshot(), root/'bound')
+            self.assertFalse((root/'bound').exists())
 
     def test_lower_coexist_admission_requires_matching_run_approval(self):
         self.load()

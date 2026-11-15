@@ -167,6 +167,13 @@ def bind_bundle(bundle, snapshot, destination):
     actual_cards = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (bundle/'cards').iterdir() if p.is_file()}
     if actual_cards != manifest['cards_sha256']:
         raise ValueError('stage card hash mismatch')
+    sampler = manifest.get('client_admission_sampler')
+    if sampler is not None:
+        gate = json.loads((bundle/'cards/23-client-memory-gate.json').read_text())
+        expected_gate = {'op': 'admission', 'id': '23-client-memory-gate', 'seconds': 25,
+                         'min_available_kib': manifest['preflight_kib']}
+        if sampler != 'native-direct' or gate != expected_gate:
+            raise ValueError('native sampler must preserve the bound admission and deadline')
     shutil.copytree(bundle, destination, copy_function=shutil.copy2)
     for path in (destination/'cards').glob('*.json'):
         card = json.loads(path.read_text())
@@ -201,6 +208,11 @@ def bind_bundle(bundle, snapshot, destination):
 def prepare_bundle(a):
     build = json.loads((a.guard_build/'build.json').read_text())
     digest = build['guard_sha256']
+    native = getattr(a, 'native_admission', False)
+    if native and build.get('native_admission') != {'samples': 3, 'interval_seconds': 5,
+            'thresholds_kib': [12288, 11776], 'deadline_seconds': 20, 'kill_grace_seconds': 3,
+            'framing': 'QDC-markers-v1'}:
+        raise ValueError('matching native admission build metadata required')
     receipt_path = a.guard_build/('coexist-'+digest+'.json')
     receipt = json.loads(receipt_path.read_text())
     if receipt.get('schema') != 2 or receipt.get('status') != 'passed' or receipt.get('guard_sha256') != digest or not VM_CASES <= set(receipt.get('cases', [])) or receipt.get('regression_cases') != 20 or receipt.get('embedded_guard_sha256') != {'coexist': digest, 'regression': digest}:
@@ -214,7 +226,8 @@ def prepare_bundle(a):
     connect['mode'] = 'coexist'
     manifest = build_bundle(sources, pins, a.out.absolute(), a.run, connect, low_copy=True,
                             client_admission_kib=a.client_admission_kib,
-                            coexist_admission_approved_for=a.approve_lower_admission_for)
+                            coexist_admission_approved_for=a.approve_lower_admission_for,
+                            native_admission=native)
     for name, data in [('build.json', (a.guard_build/'build.json').read_bytes()), ('coexist-vm.json', receipt_path.read_bytes()),
                        ('public-connection.json', a.params.read_bytes())]:
         write_private(a.out/name, data)
@@ -281,6 +294,7 @@ def main():
         prep.add_argument('--'+name, type=Path, required=True)
     prep.add_argument('--run', required=True); prep.add_argument('--direct', type=ipaddress.IPv4Address, required=True)
     prep.add_argument('--client-admission-kib', type=int, choices=(12288,11776), default=12288)
+    prep.add_argument('--native-admission', action='store_true', help='exec the validated guard for the unchanged admission samples')
     prep.add_argument('--approve-lower-admission-for', help='explicit one-run approval; must equal --run for 11.5 MiB')
     bind = sub.add_parser('bind', help='offline: create fresh single-step cards; never execute')
     bind.add_argument('bundle', type=Path); bind.add_argument('--snapshot', type=Path, required=True); bind.add_argument('--out', type=Path, required=True)

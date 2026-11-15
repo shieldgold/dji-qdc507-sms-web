@@ -90,7 +90,9 @@ def coexist_admission_exception(run, admission, approved_for):
 
 
 def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=False, client_admission_kib=12288,
-                 coexist_admission_approved_for=None):
+                 coexist_admission_approved_for=None, native_admission=False):
+    if type(native_admission) is not bool:
+        raise ValueError('explicit boolean native admission selection required')
     run = checked_id(run)
     checked_id(run+'_UNLOAD')
     coexist = bool(connect and connect.get('mode') == 'coexist')
@@ -120,6 +122,8 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
     manifest = {'schema': 1, 'run_id': run, 'device_executed': False, 'ram_root': root,
                 'scope': 'idle only; no peers/credentials/routes/DNS/boot persistence',
                 'artifacts': {}, 'stages': []}
+    if native_admission:
+        manifest['client_admission_sampler'] = 'native-direct'
     if connect:
         manifest['scope'] = 'temporary certificate test; one ipsec0, expected VIP and target /32; no default route/DNS/boot changes'
         manifest['connection'] = {k: connect[k] for k in ('target', 'vip')}
@@ -156,8 +160,8 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
         items.update(connect['files'])
     live_bytes = peak_bytes = 0
     for name, blob in items.items():
-        if name in ('qdc-ike-guard', 'qdc-tun-probe'):
-            continue  # These already exist when client admission is sampled.
+        if name == 'qdc-ike-guard' or (name == 'qdc-tun-probe' and not native_admission):
+            continue  # Only bootstrap files still resident at admission are excluded.
         chunks = split_blob(blob)
         duplicate = max(map(len, chunks[1:]), default=0) if low_copy else len(blob)
         peak_bytes = max(peak_bytes, live_bytes+len(blob)+duplicate)
@@ -202,10 +206,28 @@ def build_bundle(sources, expected, destination, run, connect=None, *, low_copy=
                 token = run+f'_LOG{n}'
                 shell(f'22-log-canary-{n}', f'{root}/qdc-tun-probe watch {token} 30 5 /bin/busybox true',
                       seconds=45, ready='LOGGER_READY '+token)
-            shell('23-client-memory-gate', "set -eu\nfor qdc_n in 1 2 3; do\n"
-                  "  qdc_available=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)\n"
-                  "  echo MEM_GATE available_kib=$qdc_available\n"
-                  f"  test \"$qdc_available\" -ge {client_admission_kib}\n  sleep 5\ndone\n", 25)
+            if native_admission:
+                retire = ('set -eu\n'+RAM_CHECK+f'cd {root}\ntest "$(cat RUN_ID)" = {shlex.quote(run)}\n'
+                          'test -f qdc-tun-probe\ntest ! -L qdc-tun-probe\n'
+                          f"printf '%s\\n' '{digest}  qdc-tun-probe' | sha256sum -c -\n"
+                          'for qdc_proc in /proc/[0-9]*/exe; do\n'
+                          '  qdc_exe=$(readlink "$qdc_proc" 2>/dev/null || true)\n'
+                          f'  case "$qdc_exe" in "{root}/qdc-tun-probe"|"{root}/qdc-tun-probe (deleted)") '
+                          'echo CANARY_PROBE_STILL_ACTIVE; exit 1;; esac\ndone\n'
+                          'rm qdc-tun-probe\necho CANARY_PROBE_RETIRED restage_after_admission=1\n')
+                shell('22-retire-canary-probe', retire)
+            if native_admission:
+                card('23-client-memory-gate', op='admission', seconds=25,
+                     min_available_kib=client_admission_kib)
+            else:
+                shell('23-client-memory-gate', "set -eu\nfor qdc_n in 1 2 3; do\n"
+                      "  qdc_available=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)\n"
+                      "  echo MEM_GATE available_kib=$qdc_available\n"
+                      f"  test \"$qdc_available\" -ge {client_admission_kib}\n  sleep 5\ndone\n", 25)
+            if native_admission:
+                card('24-probe-repush', op='push', seconds=25,
+                     local=str((payload/parts[0]).resolve()), remote=root+'/'+parts[0])
+                shell('24-probe-reassemble', assembly)
     shell('25-selftest', f'{root}/qdc-ike-guard selftest')
     token = run+'_LOAD'
     shell('30-load-tun', f'{root}/qdc-tun-probe watch {token} 10 5 /sbin/insmod {root}/tun.ko',

@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "physical_c_program_executed": false,
+  "guard_sha256": "6b20d2ecf30c45ffef6db49a74198dad4e8e90dcddfb183c98bec3f02cd9bb99",
+  "host_sha256": "14d24e066761bc51ba084429b51eed6d08075d0137c5a920f9ba328b8c486e64",
+  "source_change_scope": "temporary test tools only",
+  "memory_comparison": {
+    "environment": "isolated ARM Linux 3.18.44; 48 MiB; same BusyBox; alternating order after warmup",
+    "samples_kib": {
+      "legacy_full": [
+        [
+          34704,
+          34728,
+          34728
+        ],
+        [
+          34696,
+          34728,
+          34728
+        ]
+      ],
+      "native_direct": [
+        [
+          34996,
+          35020,
+          35020
+        ],
+        [
+          34996,
+          35020,
+          35020
+        ]
+      ]
+    },
+    "legacy_median_kib": 34728.0,
+    "native_median_kib": 35020.0,
+    "median_saved_kib": 292.0,
+    "physical_admission_still_required_kib": 12288
+  },
+  "admission_checks": {
+    "samples": 3,
+    "interval_seconds": 5,
+    "no_threshold_change": true,
+    "low_memory_fail_fast_arm_unit": true,
+    "interrupt_before_completion_refuses": true,
+    "active_probe_retirement_refused": true,
+    "blocked_output_exit_code": 124,
+    "blocked_output_seconds": 23.02
+  },
+  "cpu": {
+    "python_tests": 55,
+    "skipped_linux_translation_process_identity_case": 1,
+    "go_race_and_vet": "passed"
+  },
+  "arm": {
+    "runtime_cases": 20,
+    "coexist_cases": 7,
+    "clock_recovery_cases": 3,
+    "real_c_backend_combination": "passed"
+  },
+  "unchanged_limits": {
+    "preflight_kib": 12288,
+    "start_kib": 8192,
+    "floor_kib": 6144,
+    "max_drop_kib": 3072,
+    "runtime_seconds": 80,
+    "kill_grace_seconds": 3,
+    "coexist_seconds": 30,
+    "pairs": 10,
+    "max_log_bytes": 1048576,
+    "clock_seconds": 300,
+    "max_entry_clock_age_seconds": 180,
+    "latest_clock_rollback_age_seconds": 270
+  },
+  "backup": {
+    "paths": [
+      "auth.json",
+      "messages.json",
+      "push-state.json",
+      "call-attempts.json",
+      "clock.json",
+      "traffic.json"
+    ],
+    "encoding": "base64",
+    "maximum_file_bytes": 262144,
+    "host_directory_mode": "0700",
+    "host_file_mode": "0600",
+    "source_size_and_sha256_required": true,
+    "payload_in_stage_log": false,
+    "physical_read_only_clock_probe_bytes": 72
+  },
+  "evidence_sha256": {
+    "benchmark-5/guest.log": "592dd939beb5d5e44ff121bb996f81fde6435fc65eab4e0e61391131d4e1c591",
+    "benchmark-5/result.json": "9705e7022c061327097a811b6592b65ad2cd2c6dbec0aec692fc6756ba7906b4",
+    "coexist-build/build.json": "07e543584ce5afe539e2fe6188668592aac9a8a7ad13ece3d315f296f23a63a8",
+    "runtime-qualification.log": "48d4e234bc6cc035554b3daa1f83d975e23a1d0cff05df916cfe73ea4463e892",
+    "coexist-qualification.log": "576858fde4c123609f9fe82b88b9847667d77f46e2efa8eeb493690adb458380",
+    "clock-failure/acceptance.json": "4007bf996ad57c087040ac6c8201833ec5ca4bf93b88372e6461eafc4f25af7d",
+    "clock-delegate/acceptance.json": "aea419dfb381382156eb1ca6e379e7afd850022282b6a6e4f83d65440d1ebcbc",
+    "clock-delegate-failure/acceptance.json": "5dd2e3b4f47f8f68df474c03be3b0085b76dc73ba419d5bd60ee35aebfa2360b",
+    "c-combined-qualification.log": "4bb5f3eff9149a72068ace1d50bfafc7d9490eb59e680fc237da2f791b765dc4"
+  }
+}

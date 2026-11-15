@@ -13,6 +13,44 @@ HERE = Path(__file__).resolve().parent
 
 
 class BundleTests(unittest.TestCase):
+    def test_native_admission_replaces_shell_sampling_without_changing_limits(self):
+        m = self.load()
+        self.assertIn('native_admission', inspect.signature(m.build_bundle).parameters,
+                      'native admission sampling is not implemented')
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); sources, pins = self.fixture(root)
+            manifest = m.build_bundle(sources, pins, root/'bundle', 'NATIVE01',
+                                      native_admission=True)
+            gate = json.loads((root/'bundle/cards/23-client-memory-gate.json').read_text())
+            self.assertEqual(gate['op'], 'admission')
+            self.assertEqual(gate['min_available_kib'], 12288)
+            self.assertNotIn('command', gate)
+            self.assertEqual(gate['seconds'], 25)
+            self.assertEqual(manifest['client_admission_sampler'], 'native-direct')
+            self.assertIn('22-retire-canary-probe', manifest['stages'])
+            self.assertIn('24-probe-repush', manifest['stages'])
+            self.assertLess(manifest['stages'].index('22-log-canary-3'),
+                            manifest['stages'].index('22-retire-canary-probe'))
+            self.assertLess(manifest['stages'].index('22-retire-canary-probe'),
+                            manifest['stages'].index('23-client-memory-gate'))
+            self.assertLess(manifest['stages'].index('23-client-memory-gate'),
+                            manifest['stages'].index('24-probe-repush'))
+            self.assertLess(manifest['stages'].index('24-probe-reassemble'),
+                            manifest['stages'].index('20-2-0-push'))
+            self.assertEqual([manifest[k] for k in ('preflight_kib', 'start_after_staging_kib',
+                                                   'stop_below_kib', 'stop_drop_kib')],
+                             [12288, 8192, 6144, 3072])
+
+    def test_native_admission_rejects_truthy_non_boolean_options(self):
+        m = self.load()
+        for option in (1, 'yes', None):
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td); sources, pins = self.fixture(root)
+                with self.subTest(option=option), self.assertRaises(ValueError):
+                    m.build_bundle(sources, pins, root/'bundle', 'NATIVE01',
+                                   native_admission=option)
+                self.assertFalse((root/'bundle').exists())
+
     def load(self):
         self.assertTrue((HERE/'prepare.py').exists(), 'offline preparer is not implemented')
         spec = importlib.util.spec_from_file_location('prepare', HERE/'prepare.py')

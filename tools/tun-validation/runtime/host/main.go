@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -88,7 +87,7 @@ func main() {
 	emit("ready", map[string]any{"vid": v, "pid": p, "location": l, "automatic_recovery": false, "at_commands": false})
 	c := newClient(tr)
 	c.orphan = func(p packet) error {
-		emit("orphan_packet", map[string]any{"command": fmt.Sprintf("%x", p.cmd), "arg0": p.a, "arg1": p.b, "payload_base64": base64.StdEncoding.EncodeToString(p.data)})
+		emit("orphan_packet", map[string]any{"command": fmt.Sprintf("%x", p.cmd), "arg0": p.a, "arg1": p.b, "payload_bytes": len(p.data)})
 		return nil
 	}
 	input := bufio.NewScanner(os.Stdin)
