@@ -1,10 +1,13 @@
 package main
 
 import (
-	"errors"
 	"encoding/hex"
+	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 // 合成的 SMS-DELIVER PDU 测试向量：一条两片的长短信、UCS2 编码、含验证码。
@@ -228,4 +231,188 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func TestGSM7DecodeAllocationBudget(t *testing.T) {
+	packed, septets, _ := referenceGsm7Encode(strings.Repeat("A", 160))
+	allocs := testing.AllocsPerRun(100, func() { pduBenchmarkText = gsm7DecodeFrom(packed, 0, septets) })
+	if allocs > 2 {
+		t.Fatalf("GSM7 decode allocates %.0f objects for 160 characters; want <= 2", allocs)
+	}
+}
+
+func TestLongGSM7SubmitAllocationBudget(t *testing.T) {
+	text := strings.Repeat("A", 1530)
+	allocs := testing.AllocsPerRun(10, func() {
+		var err error
+		pduBenchmarkPDUs, err = buildSubmit("1234567890", text, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	if allocs > 250 {
+		t.Fatalf("10-part GSM7 submit allocates %.0f objects; want <= 250", allocs)
+	}
+	if len(pduBenchmarkPDUs) != 10 {
+		t.Fatal("allocation budget changed the 10-part output")
+	}
+}
+
+func TestGSM7DecoderMatchesOriginal(t *testing.T) {
+	exts := "\f^{}\\[~]|€"
+	inputs := [][]byte{nil, {0}, {0xff}, {0x1b}, {0x1b, 0}, {0x1b, 0x7f}}
+	for _, text := range []string{gsm7Basic, exts, strings.Repeat("A", 160), "A^€@\r\nB"} {
+		packed, _, _ := referenceGsm7Encode(text)
+		inputs = append(inputs, packed)
+	}
+	for _, data := range inputs {
+		for skip := 0; skip < 10; skip++ {
+			for _, n := range []int{-1, 0, 1, 2, 7, 8, 127, 160, 255} {
+				got, want := gsm7DecodeFrom(data, skip, n), referenceGsm7DecodeFrom(data, skip, n)
+				if got != want {
+					t.Fatalf("decoder changed for bytes=%x skip=%d septets=%d", data, skip, n)
+				}
+			}
+		}
+	}
+	packed, n, _ := referenceGsm7Encode(gsm7Basic + exts)
+	for _, udh := range [][]byte{{5, 0, 3, 7, 2, 1}, {6, 8, 4, 0x12, 0x34, 2, 1}} {
+		combined := referencePackBits(udh, packed, n)
+		skip := (len(udh)*8 + 6) / 7
+		if got, want := gsm7DecodeFrom(combined, skip, n), referenceGsm7DecodeFrom(combined, skip, n); got != want {
+			t.Fatal("GSM7 UDH offset changed decoded text")
+		}
+	}
+}
+
+func TestGSM7EncoderAndPackingMatchOriginal(t *testing.T) {
+	exts := "\f^{}\\[~]|€"
+	texts := []string{"", gsm7Basic, exts, gsm7Basic + exts, "中文😀", string([]byte{0xff}), strings.Repeat("A", 1530)}
+	for _, r := range gsm7Basic + exts {
+		texts = append(texts, string(r))
+	}
+	for _, text := range texts {
+		got, n, ok := gsm7Encode(text)
+		want, wn, wok := referenceGsm7Encode(text)
+		if !reflect.DeepEqual(got, want) || n != wn || ok != wok {
+			t.Fatalf("encoder differs for synthetic input %q", text)
+		}
+		for _, max := range []int{0, 1, 2, 7, 152, 153, 160} {
+			if got, want := splitGSM7(text, max), referenceSplitGSM7(text, max); !reflect.DeepEqual(got, want) {
+				t.Fatalf("GSM7 split differs for max=%d input %q", max, text)
+			}
+		}
+	}
+	headers := [][]byte{nil, {}, {0}, {5, 0, 3, 1, 2, 1}, {6, 8, 4, 0x12, 0x34, 2, 1}}
+	for size := 1; size <= 14; size++ {
+		header := make([]byte, size)
+		for i := range header {
+			header[i] = byte(0xa5 + i)
+		}
+		headers = append(headers, header)
+	}
+	for _, udh := range headers {
+		for _, data := range [][]byte{nil, {0}, {0xff}, {0x1b, 0x7f, 0x5a, 0x91}} {
+			for _, n := range []int{-1, 0, 1, 2, 7, 8, 10, 160} {
+				if got, want := packBits(udh, data, n), referencePackBits(udh, data, n); !reflect.DeepEqual(got, want) {
+					t.Fatalf("UDH packing changed: udh=%x data=%x septets=%d", udh, data, n)
+				}
+			}
+		}
+	}
+}
+
+func TestSubmitPDUBytesMatchOriginalAtBoundaries(t *testing.T) {
+	exts := "\f^{}\\[~]|€"
+	texts := []string{"", " \t\n", gsm7Basic + exts, strings.Repeat(gsm7Basic+exts, 7), "中文和emoji😀", string([]byte{0xff, 0xfe, 'A'})}
+	for _, n := range []int{1, 152, 153, 159, 160, 161, 305, 306, 307, 1529, 1530, 1531, 1600, 1601} {
+		texts = append(texts, strings.Repeat("A", n))
+	}
+	for _, n := range []int{76, 77, 79, 80, 81, 759, 760, 761, 764, 765, 766} {
+		texts = append(texts, strings.Repeat("^", n))
+	}
+	for _, n := range []int{66, 67, 70, 71, 669, 670, 671} {
+		texts = append(texts, strings.Repeat("中", n))
+	}
+	for _, n := range []int{33, 34, 35, 36, 329, 330, 331} {
+		texts = append(texts, strings.Repeat("😀", n))
+	}
+	texts = append(texts, strings.Repeat("A", 152)+"^B", strings.Repeat("A", 151)+"€AB", strings.Repeat("中", 66)+"😀中")
+	for i, text := range texts {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			for _, number := range []string{"10010", " +8613800138000 ", "12345678901234567890", "", "+", "123x"} {
+				for _, ref := range []int{1, 255} {
+					got, err := buildSubmit(number, text, ref)
+					want, werr := referenceBuildSubmit(number, text, ref)
+					if !reflect.DeepEqual(got, want) || fmt.Sprint(err) != fmt.Sprint(werr) {
+						t.Fatalf("PDU bytes/errors changed for number=%q ref=%d", number, ref)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestGSM7RoundTripCompletePrintableAlphabet(t *testing.T) {
+	text := strings.ReplaceAll(gsm7Basic, "\x1b", "") + "\f^{}\\[~]|€"
+	text = strings.Repeat(text, 5)
+	pdus, err := buildSubmit("12345", text, 255)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got strings.Builder
+	for _, pdu := range pdus {
+		_, body, err := parseSubmitForTest(pdu)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got.WriteString(body)
+	}
+	if got.String() != text {
+		t.Fatal("complete printable GSM7 alphabet failed multipart round trip")
+	}
+}
+
+func TestGSM7DeliverKeepsTimestampAndMessageIdentity(t *testing.T) {
+	packed, n, _ := referenceGsm7Encode(gsm7Basic + "\f^{}\\[~]|€")
+	for _, tz := range []struct {
+		hex, name string
+		offset    int
+	}{
+		{"00", "UTC+00:00", 0},
+		{"23", "UTC+08:00", 8 * 3600},
+		// Preserve the original name even for a negative offset below one hour.
+		{"28", "UTC+00:30", -30 * 60},
+		{"69", "UTC-04:00", -4 * 3600},
+		{"1A", "UTC-05:15", -5*3600 - 15*60},
+	} {
+		for _, udh := range [][]byte{nil, {5, 0, 3, 7, 2, 1}, {6, 8, 4, 0x12, 0x34, 2, 1}} {
+			ptype, udl, payload := "00", n, packed
+			skip := 0
+			if len(udh) > 0 {
+				ptype = "40"
+				skip = (len(udh)*8 + 6) / 7
+				udl += skip
+				payload = referencePackBits(udh, packed, n)
+			}
+			raw := "00" + ptype + "0A8121436587090000" + "621151800000" + tz.hex + fmt.Sprintf("%02X", udl) + hex.EncodeToString(payload)
+			got, err := parseDeliver(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			name, offset := got.t.Zone()
+			if name != tz.name || offset != tz.offset || got.t.Format("2006-01-02 15:04:05") != "2026-11-15 08:00:00" {
+				t.Fatalf("deliver timestamp/timezone changed for %s", tz.hex)
+			}
+			if !got.t.Equal(time.Date(2026, 11, 15, 8, 0, 0, 0, time.FixedZone(tz.name, tz.offset))) {
+				t.Fatal("deliver timestamp instant changed")
+			}
+			got.index, got.status = 7, "0"
+			want := *got
+			want.body = referenceGsm7DecodeFrom(payload, skip, n)
+			if !reflect.DeepEqual(mergeParts([]*part{got}), mergeParts([]*part{&want})) {
+				t.Fatal("decode changed merged body, timestamp, key or verification code")
+			}
+		}
+	}
 }

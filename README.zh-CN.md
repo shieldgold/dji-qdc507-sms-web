@@ -45,7 +45,7 @@ QDC507 不是一块傻网卡，它**本质上是一台完整的 Linux 小电脑*
                                                 └──────────────────────────┘
 ```
 
-**`smsweb` 是一个 2.6MB 的 ARMv7 静态二进制，直接跑在模块内部。** 它：
+**`smsweb` 是一个 ARMv7 静态二进制，直接跑在模块内部。** 它：
 
 - 通过 `/dev/smd9` 与基带对话收发短信，
 - 在模块自己的 USB 网卡上跑一个极小的 HTTP 服务，
@@ -69,7 +69,7 @@ QDC507 不是一块傻网卡，它**本质上是一台完整的 Linux 小电脑*
 | **改密码 / 退出登录** | 改密码会把其他所有已登录设备踢下线。 |
 | **状态栏** | 运营商、信号强度、SIM 状态、存储占用、最近轮询时间。 |
 | **开机自启** | 只在只读系统分区加一个符号链接，模块上电约 40 秒后服务自动就绪。 |
-| **极小** | 2.6MB 二进制，在 43MB 内存的设备上占用约 **3MB RSS**。 |
+| **内存占用** | 当前含通话、推送的版本不同于早期纯短信版本，详见[优化测量记录](tools/sms-validation/RESULT_2026-11-15.zh-CN.md)。 |
 
 ---
 
@@ -78,7 +78,7 @@ QDC507 不是一块傻网卡，它**本质上是一台完整的 Linux 小电脑*
 - **大疆一代 4G 模块**（Baiwang **QDC507**，闲鱼几十块）。USB 布局相同的 Quectel EG25-G 理论上也行。
 - 一张**能上网、能收短信**的 SIM 卡（短信不需要语音；实验性通话功能需要开通语音业务及部署额外运行时）。
 - 一台用于部署的电脑（macOS / Linux / Windows）+ **`adb`** + **能传数据的 USB 线**。
-- 编译需要 **Go 1.21**（原因见 [为什么必须用 Go 1.21](#为什么必须用-go-121)。
+- 编译支持 **Go 1.21–1.23**，本轮验证固定为 **Go 1.23.12**（原因见[编译约束](#为什么必须用-go-121)）。
 
 ---
 
@@ -105,7 +105,7 @@ adb shell id         # 应输出 uid=0(root)
 ### 2. 编译
 
 ```bash
-./build.sh           # 生成 smsweb-armv7（2.6MB，静态，Linux/ARMv7）
+QDC_GO=/absolute/go1.23.12/bin/go ./build.sh  # 仅编译静态 Linux/ARMv7，不部署
 ```
 
 ### 3. 部署
@@ -173,7 +173,7 @@ http://192.168.225.1:8787
  ┌──────┴──────────────────────────────────────────────┐
  │ QDC507 模块 — Linux 3.18.44, ARMv7, 43MB RAM        │
  │                                                     │
- │  smsweb（Go 1.21 静态编译）                          │
+ │  smsweb（Go 1.23.12 静态编译）                       │
  │   ├── httpmux.go  自写极简 HTTP/1.1 服务器           │
  │   ├── ui.go       内嵌单页界面                       │
  │   ├── auth.go     PBKDF2 密码 + token 会话           │
@@ -212,29 +212,31 @@ http://192.168.225.1:8787
 
 **这个目标平台不能用 Go 1.24 及以上。** 它们的 `crypto/*` 包会连带引入 FIPS 140-3 模块，而该模块的初始化**在这个 3.18.44 内核上会立刻段错误**——`crypto/sha256`、`crypto/rand`、`crypto/pbkdf2` 全都在进程启动阶段就崩，`GOFIPS140=off` 也没用。这是我在设备上用一堆极小探针程序逐个包二分定位出来的。
 
-同一类问题也发生在标准库的 `net/http` 上：它**也在这个内核上一初始化就段错误**（而单独用 `net` 完全正常）。所以本项目自己手写了：
+早期探针也遇到过标准库 `net/http` 的启动失败，因此纯短信实现采用了：
 
 - 基于 `net` 的 HTTP/1.1 服务器（`httpmux.go`）；
 - 基于 `crypto/hmac` + `crypto/sha256` 的 PBKDF2-HMAC-SHA256（`auth.go`）；
 - 用 `/dev/urandom` 替代 `crypto/rand`。
 
-这三处改动把二进制从 6.6MB 降到 2.6MB，内存占用降到约 3MB。
+早期纯短信版本曾达到 2.6MB 二进制、约 3MB RSS；该数字不适用于当前含通话、推送的分支。当前推送仍使用 TLS 包，本轮以 Go 1.23.12 验证；自定义 HTTP 服务继续保留。最新测量分别报告分配流量、进程 RSS 和系统可用内存，不能混用。
 
 ### 编译
 
 ```bash
-export GOTOOLCHAIN=local          # 别让 go.mod 去拉更新的工具链
-export CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7
-go build -trimpath -ldflags="-s -w" -o smsweb-armv7 .
+QDC_GO=/absolute/go1.23.12/bin/go ./build.sh
+# 可指定产物路径：QDC_OUTPUT=/absolute/private-output/smsweb-armv7
+# 可保留旧布局对照：QDC_ELF_ROUND=65536（默认 4096）
+# 可选小体积编译：QDC_BUILD_PROFILE=memory（增加函数调用的 CPU 开销）
 ```
 
 ### 测试
 
 ```bash
-go test ./...                     # 宿主机上任意 Go >= 1.21 均可
+GOENV=off GOROOT=/absolute/go1.23.12 GOTOOLCHAIN=local \
+  /absolute/go1.23.12/bin/go test -race ./...
 ```
 
-> 注意：Go 1.21 编译出的**宿主机**二进制在 macOS 27+ 上跑不起来（dyld 报缺 `LC_UUID`），但**交叉编译到 Linux/ARMv7 完全正常**。在这种系统上可以用较新的 Go 跑测试、用 Go 1.21 出目标产物。
+> 分配量对比和目标产物应固定相同 Go 版本。编译脚本隔离本机持久 Go 配置、禁止自动下载新工具链，并在编译前拒绝 Go 1.24 及以上。电脑单测不能替代 ARM 或实机验收。
 
 ---
 

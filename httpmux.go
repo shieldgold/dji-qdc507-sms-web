@@ -7,7 +7,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -59,21 +58,43 @@ func (w *Resp) Write(status int, contentType string, body []byte) error {
 	case 500:
 		reason = "Internal Server Error"
 	}
-	if _, err := fmt.Fprintf(w.bw, "HTTP/1.1 %d %s\r\n", status, reason); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(w.bw,
-		"Content-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\nCache-Control: no-store\r\n",
-		contentType, len(body)); err != nil {
+	// Build the common header in the writer's own buffer. Large bodies still go
+	// through bufio.Writer.Write, which writes them directly after flushing.
+	header := w.bw.AvailableBuffer()
+	header = append(header, "HTTP/1.1 "...)
+	header = strconv.AppendInt(header, int64(status), 10)
+	header = append(header, ' ')
+	header = append(header, reason...)
+	header = append(header, "\r\nContent-Type: "...)
+	header = append(header, contentType...)
+	header = append(header, "\r\nContent-Length: "...)
+	header = strconv.AppendInt(header, int64(len(body)), 10)
+	header = append(header, "\r\nConnection: close\r\nCache-Control: no-store\r\n"...)
+	if _, err := w.bw.Write(header); err != nil {
 		return err
 	}
 	for k, v := range w.headers {
-		if _, err := fmt.Fprintf(w.bw, "%s: %s\r\n", k, v); err != nil {
+		if _, err := w.bw.WriteString(k); err != nil {
+			return err
+		}
+		if _, err := w.bw.WriteString(": "); err != nil {
+			return err
+		}
+		if _, err := w.bw.WriteString(v); err != nil {
+			return err
+		}
+		if _, err := w.bw.WriteString("\r\n"); err != nil {
 			return err
 		}
 	}
 	for _, c := range w.cookies {
-		if _, err := fmt.Fprintf(w.bw, "Set-Cookie: %s\r\n", c); err != nil {
+		if _, err := w.bw.WriteString("Set-Cookie: "); err != nil {
+			return err
+		}
+		if _, err := w.bw.WriteString(c); err != nil {
+			return err
+		}
+		if _, err := w.bw.WriteString("\r\n"); err != nil {
 			return err
 		}
 	}
@@ -112,28 +133,30 @@ func ServeHTTP(addr string, routes map[string]Handler, fallback Handler) error {
 func handleConn(c net.Conn, routes map[string]Handler, fallback Handler) {
 	defer c.Close()
 	_ = c.SetDeadline(time.Now().Add(30 * time.Second))
-	br := bufio.NewReaderSize(c, 4096)
-	bw := bufio.NewWriterSize(c, 16384)
+	br := bufio.NewReaderSize(c, 512)
+	bw := bufio.NewWriterSize(c, 512)
 
-	rawLine, err := br.ReadSlice('\n')
-	line := string(rawLine)
+	line, err := readHTTPLine(br)
 	if err != nil {
 		return
 	}
 	line = strings.TrimRight(line, "\r\n")
-	parts := strings.SplitN(line, " ", 3)
-	if len(parts) < 2 {
+	i := strings.IndexByte(line, ' ')
+	if i < 0 {
 		return
 	}
-	req := &Req{Method: parts[0], Path: parts[1], Header: map[string]string{}}
+	method, path := line[:i], line[i+1:]
+	if i := strings.IndexByte(path, ' '); i >= 0 {
+		path = path[:i]
+	}
+	req := &Req{Method: method, Path: path, Header: map[string]string{}}
 	if i := strings.IndexByte(req.Path, '?'); i >= 0 {
 		req.Query = req.Path[i+1:]
 		req.Path = req.Path[:i]
 	}
 	headerBytes := 0
 	for {
-		raw, err := br.ReadSlice('\n')
-		l := string(raw)
+		l, err := readHTTPLine(br)
 		headerBytes += len(l)
 		if headerBytes > 8192 {
 			return
@@ -186,5 +209,29 @@ func handleConn(c net.Conn, routes map[string]Handler, fallback Handler) {
 	}
 	if err := h(resp, req); err != nil {
 		_ = resp.Write(500, "text/plain; charset=utf-8", []byte(err.Error()))
+	}
+}
+
+// Keep the original 4 KiB per-line limit while paying for that capacity only
+// when a request/header line does not fit the small connection read buffer.
+func readHTTPLine(br *bufio.Reader) (string, error) {
+	raw, err := br.ReadSlice('\n')
+	if err != bufio.ErrBufferFull {
+		return string(raw), err
+	}
+	var line strings.Builder
+	line.Grow(4096)
+	for {
+		if line.Len()+len(raw) > 4096 {
+			return "", bufio.ErrBufferFull
+		}
+		_, _ = line.Write(raw)
+		if err != bufio.ErrBufferFull {
+			return line.String(), err
+		}
+		if line.Len() == 4096 {
+			return "", bufio.ErrBufferFull
+		}
+		raw, err = br.ReadSlice('\n')
 	}
 }

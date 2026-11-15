@@ -79,7 +79,9 @@ func loadPush(dir string) *PushService {
 }
 func messagePushHash(key string) string {
 	v := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(v[:])
+	var encoded [64]byte
+	hex.Encode(encoded[:], v[:])
+	return string(encoded[:])
 }
 func callPushUUID(id string) string {
 	v := sha256.Sum256([]byte("module-call:" + id))
@@ -177,20 +179,56 @@ func (p *PushService) bindCard(card string) {
 	})
 	p.lastError = "SIM 已更换，请重新开启通知"
 }
+
+func (p *PushService) observing() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	s := p.state.Subscription
+	return s.ICCID != "" && (s.Enabled || s.CallsEnabled)
+}
+
+// observeCurrent reads snapshots outside the push lock. observeRecords rechecks
+// the subscription after snapshotting, so a concurrent disable cannot queue an
+// alert. register records the existing message baseline before enabling alerts.
+func (p *PushService) observeCurrent(messages func() []pushMessage, calls func() CallSnapshot, now time.Time) error {
+	if !p.observing() {
+		return nil
+	}
+	return p.observeRecords(messages(), calls(), now)
+}
+
+func samePushSet(a, b map[string]bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key, value := range a {
+		if old, ok := b[key]; !ok || old != value {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *PushService) observe(messages []*Message, calls CallSnapshot, now time.Time) error {
+	if !p.observing() {
+		return nil
+	}
+	return p.observeRecords(pushRecords(messages), calls, now)
+}
+
+func (p *PushService) observeRecords(messages []pushMessage, calls CallSnapshot, now time.Time) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	s := p.state.Subscription
 	if s.ICCID == "" || (!s.Enabled && !s.CallsEnabled) {
 		return nil
 	}
-	before, _ := json.Marshal(p.state)
-	seen := map[string]bool{}
+	seen := make(map[string]bool, len(messages))
 	count := 0
 	for _, m := range messages {
-		h := messagePushHash(m.Key)
+		h := messagePushHash(m.key)
 		seen[h] = true
-		if s.Enabled && m.Direction == "in" && !p.state.Seen[h] {
+		if s.Enabled && m.direction == "in" && !p.state.Seen[h] {
 			count++
 		}
 	}
@@ -198,41 +236,54 @@ func (p *PushService) observe(messages []*Message, calls CallSnapshot, now time.
 	var added []PushEvent
 	for _, c := range calls.Calls {
 		if c.Direction == "in" && (c.State == "incoming" || c.State == "waiting") {
-			ringing[c.ID] = true
-			if s.CallsEnabled && !p.state.Calls[c.ID] {
+			if s.CallsEnabled && !p.state.Calls[c.ID] && !ringing[c.ID] {
 				added = append(added, PushEvent{ID: newPushID(), Kind: "call", CallID: c.ID, CallUUID: callPushUUID(c.ID), Created: now, Next: now})
-				p.state.Calls[c.ID] = true
 			}
+			ringing[c.ID] = true
 		}
 	}
 	if calls.Error != "" {
-		ringing = p.state.Calls
+		if len(added) == 0 {
+			ringing = p.state.Calls
+		} else {
+			for id, value := range p.state.Calls {
+				if _, present := ringing[id]; !present {
+					ringing[id] = value
+				}
+			}
+		}
 	} // an uncertain read must not invent a hangup
-	q := []PushEvent{}
+	queueChanged := len(added) > 0
+	var q []PushEvent
 	for _, e := range p.state.Queue {
 		if e.Kind != "call" || ringing[e.CallID] {
 			q = append(q, e)
+		} else {
+			queueChanged = true
 		}
 	}
-	p.state.Queue = append(added, q...)
-	if count > 0 && len(p.state.Queue) < 32 {
-		p.state.Queue = append(p.state.Queue, PushEvent{ID: newPushID(), Kind: "sms", Count: count, Created: now, Next: now})
+	queue := append(added, q...)
+	if count > 0 && len(queue) < 32 {
+		queue = append(queue, PushEvent{ID: newPushID(), Kind: "sms", Count: count, Created: now, Next: now})
+		queueChanged = true
 	} else if count > 0 {
 		seen = p.state.Seen
 	}
-	p.state.Seen = seen
-	if calls.Error == "" {
-		p.state.Calls = ringing
-	}
-	after, _ := json.Marshal(p.state)
-	if string(before) == string(after) {
+	if !queueChanged && samePushSet(seen, p.state.Seen) && samePushSet(ringing, p.state.Calls) {
 		return nil
 	}
+	// Changed observations previously round-tripped the next state through JSON.
+	// Preserve its wall-clock deadline semantics without serializing the state
+	// twice; unchanged observations retain their original in-memory timestamps.
+	for i := range queue {
+		queue[i].Created = queue[i].Created.Round(0)
+		queue[i].Next = queue[i].Next.Round(0)
+	}
 	// Persist the dedupe marker and event atomically before allowing a send.
-	var original pushState
-	_ = json.Unmarshal(before, &original)
-	p.state = original
-	return p.mutateLocked(func() { var next pushState; _ = json.Unmarshal(after, &next); p.state = next })
+	// mutateLocked retains the previous state if the write fails.
+	next := p.state
+	next.Seen, next.Calls, next.Queue = seen, ringing, queue
+	return p.mutateLocked(func() { p.state = next })
 }
 func (p *PushService) pending() bool { p.mu.Lock(); defer p.mu.Unlock(); return len(p.state.Queue) > 0 }
 func (p *PushService) sendNext(card string, now time.Time) {
@@ -312,7 +363,7 @@ func (p *PushService) status() map[string]any {
 func (a *App) pushLoop() {
 	for {
 		now := applicationTime.Now()
-		_ = a.push.observe(a.store.List(), a.calls.Snapshot(), now)
+		_ = a.push.observeCurrent(a.store.pushSnapshot, a.calls.Snapshot, now)
 		if a.push.pending() {
 			a.opMu.Lock()
 			card, e := a.freshSIMIdentity()

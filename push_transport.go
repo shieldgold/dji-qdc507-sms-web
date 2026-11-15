@@ -173,7 +173,7 @@ func apnsPayload(d PushDelivery) ([]byte, error) {
 		}
 		return json.Marshal(map[string]any{"aps": map[string]any{}, "call_id": d.CallID, "call_uuid": d.CallUUID, "event_id": d.EventID})
 	}
-	title := "模块电话 · 后台推送测试"
+	title := "小电波 · 后台推送测试"
 	if d.Kind == "sms" {
 		if d.Count < 1 || d.Count > 300 {
 			return nil, &pushPermanentError{"短信推送数量无效"}

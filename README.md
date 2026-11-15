@@ -45,7 +45,7 @@ So instead of fighting the iPad, we move the problem:
                                                 └──────────────────────────┘
 ```
 
-**`smsweb` is a 2.6 MB static ARMv7 binary that runs inside the module itself.** It
+**`smsweb` is a static ARMv7 binary that runs inside the module itself.** It
 talks to the modem's AT channel on `/dev/smd9`, serves a small web UI on the module's
 own USB network interface, stores messages on the module's writable `/data` partition,
 and auto-starts on every boot.
@@ -68,7 +68,7 @@ and send SMS over the module's SIM card. No app, no cloud, no computer, no inter
 | **Change password / logout** | Changing the password invalidates every other logged-in device. |
 | **Status bar** | Carrier, signal strength, SIM state, storage usage, last poll time. |
 | **Auto-start** | A single symlink in the read-only rootfs; the service comes up by itself ~40 s after the module powers on. |
-| **Tiny** | 2.6 MB binary, **~3 MB RSS** on a 43 MB device. |
+| **Memory use** | The current calling/push build differs from the original SMS-only build; see the [measured optimization results](tools/sms-validation/RESULT_2026-11-15.zh-CN.md). |
 
 ---
 
@@ -77,7 +77,7 @@ and send SMS over the module's SIM card. No app, no cloud, no computer, no inter
 - **A DJI Cellular 4G module, first generation** — Baiwang **QDC507** (sold as a DJI drone accessory for ~$5). A Quectel EG25-G with the same USB layout should also work.
 - A SIM card with **data + SMS** (voice is not needed for SMS; calling requires a voice-enabled SIM and the experimental runtime).
 - Any host to deploy from (macOS/Linux/Windows) with **`adb`** and a **USB data cable**.
-- To build: **Go 1.21** (see [Why Go 1.21](#why-go-121--an-important-build-constraint)).
+- To build: **Go 1.21–1.23**; the validated reference is **Go 1.23.12** (see [build constraints](#why-go-121--an-important-build-constraint)).
 
 ---
 
@@ -107,7 +107,7 @@ adb shell id         # should print uid=0(root)
 ### 2. Build
 
 ```bash
-./build.sh           # produces smsweb-armv7 (2.6 MB, static, Linux/ARMv7)
+QDC_GO=/absolute/go1.23.12/bin/go ./build.sh  # static Linux/ARMv7; no deployment
 ```
 
 ### 3. Deploy
@@ -182,7 +182,7 @@ Traffic is plain HTTP over the module's private USB link. See [Known limitations
  ┌──────┴──────────────────────────────────────────────┐
  │ QDC507 module — Linux 3.18.44, ARMv7, 43 MB RAM     │
  │                                                     │
- │  smsweb (Go 1.21, static)                           │
+ │  smsweb (Go 1.23.12, static)                        │
  │   ├── httpmux.go  hand-rolled HTTP/1.1 server       │
  │   ├── ui.go       embedded single-page UI           │
  │   ├── auth.go     PBKDF2 password + token sessions  │
@@ -228,32 +228,38 @@ FIPS 140-3 module, whose initialisation **segfaults immediately on this kernel (
 `GOFIPS140=off` does not help. This was isolated by bisecting imports with tiny probe
 programs on the device itself.
 
-The same class of problem bites the standard library's `net/http`, which **also segfaults
-on init** here (while `net` alone is fine). That is why this project hand-rolls:
+The early probes also encountered a `net/http` startup failure. The SMS server
+retains its custom implementation; the current push service uses TLS packages
+and is validated with Go 1.23.12. The original SMS implementation used:
 
 - an HTTP/1.1 server on top of `net` (`httpmux.go`),
 - PBKDF2-HMAC-SHA256 on top of `crypto/hmac` + `crypto/sha256` (`auth.go`),
 - randomness from `/dev/urandom` instead of `crypto/rand`.
 
-Those three changes took the binary from 6.6 MB to 2.6 MB and the RSS to ~3 MB.
+The earlier 2.6 MB binary and ~3 MB RSS figures described the SMS-only version.
+They do not describe the current calling/push branch. Current measurements keep
+allocation traffic, process RSS and system available memory separate.
 
 ### Build
 
 ```bash
-export GOTOOLCHAIN=local          # do not let go.mod pull a newer toolchain
-export CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7
-go build -trimpath -ldflags="-s -w" -o smsweb-armv7 .
+QDC_GO=/absolute/go1.23.12/bin/go ./build.sh
+# Optional output path: QDC_OUTPUT=/absolute/private-output/smsweb-armv7
+# Optional comparison layout: QDC_ELF_ROUND=65536 (default: 4096)
+# Optional smaller-code build: QDC_BUILD_PROFILE=memory (more CPU call overhead)
 ```
 
 ### Test
 
 ```bash
-go test ./...                     # any Go >= 1.21 on your host
+GOENV=off GOROOT=/absolute/go1.23.12 GOTOOLCHAIN=local \
+  /absolute/go1.23.12/bin/go test -race ./...
 ```
 
-> Note: Go 1.21's *host* binaries do not run on macOS 27+ (dyld rejects them for a missing
-> `LC_UUID`), but cross-compiling to Linux/ARMv7 works perfectly. Use a newer Go for tests
-> on such a host, and Go 1.21 for the target build.
+> Use the same Go version for allocation comparisons and target builds. The
+> build script isolates persistent Go settings, disables toolchain downloads,
+> and rejects Go 1.24+ before compiling. Desktop tests do not replace ARM or
+> physical-module acceptance.
 
 ---
 

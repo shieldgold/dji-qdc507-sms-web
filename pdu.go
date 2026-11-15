@@ -49,7 +49,10 @@ func gsm7Decode(data []byte, septets int) string {
 // （GSM7 正文前面带 UDH 时，正文并不从字节边界开始）
 func gsm7DecodeFrom(data []byte, skip, septets int) string {
 	basic := []rune(gsm7Basic)
-	var out []rune
+	var out strings.Builder
+	if septets > 0 {
+		out.Grow(septets)
+	}
 	pos := skip * 7
 	read := func() int {
 		v := 0
@@ -68,17 +71,17 @@ func gsm7DecodeFrom(data []byte, skip, septets int) string {
 			v2 := read()
 			i++
 			if r, ok := gsm7ExtMap[v2]; ok {
-				out = append(out, r)
+				out.WriteRune(r)
 			}
 			continue
 		}
 		if v < len(basic) {
-			out = append(out, basic[v])
+			out.WriteRune(basic[v])
 		} else {
-			out = append(out, '?')
+			out.WriteByte('?')
 		}
 	}
-	return string(out)
+	return out.String()
 }
 
 // BCD 半字节交换的电话号码（F 为填充）
@@ -319,21 +322,30 @@ func parseDeliver(h string) (*part, error) {
 
 // ---------------- 发送 ----------------
 
+// gsm7RuneWidth returns the number of septets, or zero for a non-GSM7 rune.
+func gsm7RuneWidth(r rune) int {
+	if _, ok := gsm7Rev[r]; ok {
+		return 1
+	}
+	if _, ok := gsm7ExtRev[r]; ok {
+		return 2
+	}
+	return 0
+}
+
 // gsm7Encode 返回打包字节、septet 数、是否可编码
 func gsm7Encode(s string) ([]byte, int, bool) {
-	var septets []int
+	n := 0
 	for _, r := range s {
-		if idx, ok := gsm7Rev[r]; ok {
-			septets = append(septets, idx)
-		} else if code, ok := gsm7ExtRev[r]; ok {
-			septets = append(septets, 0x1b, code)
-		} else {
+		width := gsm7RuneWidth(r)
+		if width == 0 {
 			return nil, 0, false
 		}
+		n += width
 	}
-	out := make([]byte, (len(septets)*7+7)/8)
+	out := make([]byte, (n*7+7)/8)
 	bit := 0
-	for _, v := range septets {
+	write := func(v int) {
 		for b := 0; b < 7; b++ {
 			if (v>>uint(b))&1 == 1 {
 				out[bit/8] |= 1 << uint(bit%8)
@@ -341,40 +353,31 @@ func gsm7Encode(s string) ([]byte, int, bool) {
 			bit++
 		}
 	}
-	return out, len(septets), true
+	for _, r := range s {
+		if v, ok := gsm7Rev[r]; ok {
+			write(v)
+		} else {
+			write(0x1b)
+			write(gsm7ExtRev[r])
+		}
+	}
+	return out, n, true
 }
 
 // packBits 把 UDH 字节与 GSM7 打包文本按位拼接（UDH 填充到 7 位边界后接正文）
 func packBits(udh []byte, packed []byte, septets int) []byte {
-	var bits []int
-	for _, b := range udh {
-		for i := 0; i < 8; i++ {
-			bits = append(bits, int((b>>uint(i))&1))
-		}
+	// The UDH is padded to the next septet boundary before the text starts.
+	headerBits := ((len(udh)*8 + 6) / 7) * 7
+	textBits := 0
+	if septets > 0 {
+		textBits = septets * 7
 	}
-	for len(bits)%7 != 0 {
-		bits = append(bits, 0)
-	}
-	udhSeptets := len(bits) / 7
-	_ = udhSeptets
-	pos := 0
-	for i := 0; i < septets; i++ {
-		v := 0
-		for b := 0; b < 7; b++ {
-			idx := pos + b
-			if idx/8 < len(packed) && (packed[idx/8]>>uint(idx%8))&1 == 1 {
-				v |= 1 << uint(b)
-			}
-		}
-		pos += 7
-		for b := 0; b < 7; b++ {
-			bits = append(bits, (v>>uint(b))&1)
-		}
-	}
-	out := make([]byte, (len(bits)+7)/8)
-	for i, bit := range bits {
-		if bit == 1 {
-			out[i/8] |= 1 << uint(i%8)
+	out := make([]byte, (headerBits+textBits+7)/8)
+	copy(out, udh)
+	for bit := 0; bit < textBits; bit++ {
+		if bit/8 < len(packed) && (packed[bit/8]>>uint(bit%8))&1 == 1 {
+			pos := headerBits + bit
+			out[pos/8] |= 1 << uint(pos%8)
 		}
 	}
 	return out
@@ -395,20 +398,22 @@ func encodeAddress(num string) string {
 
 func splitGSM7(text string, max int) []string {
 	var segs []string
-	cur := ""
+	var cur strings.Builder
+	units := 0
+	encodable := true
 	for _, r := range text {
-		cand := cur + string(r)
-		if _, n, ok := gsm7Encode(cand); ok && n <= max {
-			cur = cand
-			continue
+		width := gsm7RuneWidth(r)
+		if cur.Len() > 0 && (width == 0 || !encodable || units+width > max) {
+			segs = append(segs, cur.String())
+			cur = strings.Builder{}
+			units = 0
 		}
-		if cur != "" {
-			segs = append(segs, cur)
-		}
-		cur = string(r)
+		cur.WriteRune(r)
+		units += width
+		encodable = width > 0
 	}
-	if cur != "" {
-		segs = append(segs, cur)
+	if cur.Len() > 0 {
+		segs = append(segs, cur.String())
 	}
 	return segs
 }
@@ -471,10 +476,9 @@ func buildSubmit(number, text string, ref int) ([]string, error) {
 			ptype, len(digits), toa, addr, dcs, udl, strings.ToUpper(hex.EncodeToString(payload)))
 	}
 
-	_, _, isGSM7 := gsm7Encode(text)
+	pk, n, isGSM7 := gsm7Encode(text)
 
 	if isGSM7 {
-		pk, n, _ := gsm7Encode(text)
 		if n <= 160 {
 			return []string{mkPDU("01", "00", n, pk)}, nil
 		}

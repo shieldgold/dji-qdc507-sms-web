@@ -1,35 +1,55 @@
 #!/bin/sh
 # build.sh — cross-compile smsweb for the DJI QDC507 module (Linux / ARMv7).
 #
-# IMPORTANT: use Go 1.21 (or any Go < 1.24).
+# Use Go 1.21-1.23. The deployed reference uses Go 1.23.12.
 # Go 1.24+ links in the FIPS 140-3 module whose init segfaults on this device's
 # kernel 3.18.44; see the README section "Why Go 1.21".
-set -e
+set -eu
 
 cd "$(dirname "$0")"
 
-if ! command -v go >/dev/null 2>&1; then
-    echo "error: go not found in PATH" >&2
+GO_TOOL=${QDC_GO:-go}
+OUTPUT=${QDC_OUTPUT:-smsweb-armv7}
+ELF_ROUND=${QDC_ELF_ROUND:-4096}
+BUILD_PROFILE=${QDC_BUILD_PROFILE:-balanced}
+if ! command -v "$GO_TOOL" >/dev/null 2>&1; then
+    echo "error: compatible Go not found; set QDC_GO to its executable" >&2
     exit 1
 fi
 
-GOVER=$(go env GOVERSION 2>/dev/null | sed 's/^go//')
+# Do not let a persistent Go env or another SDK's GOROOT mix compiler/stdlib
+# versions, and never fetch a newer toolchain while preparing this old target.
+unset GOROOT
+GOENV=off
+GOTOOLCHAIN=local
+GOPROXY=off
+GOSUMDB=off
+export GOENV GOTOOLCHAIN GOPROXY GOSUMDB
+GOVER=$("$GO_TOOL" env GOVERSION)
+GOVER=${GOVER#go}
 echo "Using Go $GOVER"
 
-# Never let go.mod fetch a newer toolchain behind our back
-GOTOOLCHAIN=local
-export GOTOOLCHAIN
-
 case "$GOVER" in
-    1.2[4-9]*|1.[3-9][0-9]*)
-        echo "warning: Go $GOVER is known to produce binaries that segfault on kernel 3.18.44."
-        echo "         Please build with Go 1.21-1.23 instead."
-        ;;
+    1.21.*|1.22.*|1.23.*) ;;
+    *) echo "error: kernel 3.18.44 target requires Go 1.21-1.23; set QDC_GO" >&2; exit 2 ;;
 esac
+case "$ELF_ROUND" in
+    4096|65536) ;;
+    *) echo "error: QDC_ELF_ROUND must be 4096 or 65536" >&2; exit 2 ;;
+esac
+case "$BUILD_PROFILE" in
+    balanced) set -- ;;
+    # Smaller code footprint, with additional call overhead. Keep this explicit
+    # so ordinary builds do not silently trade CPU time for memory.
+    memory) set -- '-gcflags=all=-l' ;;
+    *) echo "error: QDC_BUILD_PROFILE must be balanced or memory" >&2; exit 2 ;;
+esac
+echo "Build profile: $BUILD_PROFILE"
 
+# QDC507 has 4 KiB kernel pages. Preserve the 64 KiB layout as an explicit
+# comparison option; neither choice changes application/crypto functionality.
 CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 \
-    go build -trimpath -ldflags="-s -w" -o smsweb-armv7 .
+    "$GO_TOOL" build -trimpath -buildvcs=false "$@" -ldflags="-s -w -R $ELF_ROUND" -o "$OUTPUT" .
 
 echo
-echo "Built: $(ls -lh smsweb-armv7 | awk '{print $5}')  smsweb-armv7"
-echo "Next:  ./deploy/install.sh"
+echo "Built: $(ls -lh "$OUTPUT" | awk '{print $5}')  $OUTPUT"

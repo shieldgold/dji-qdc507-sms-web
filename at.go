@@ -29,10 +29,9 @@ func OpenModem(path string) (*Modem, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 清掉 O_NONBLOCK，让读操作阻塞（在独立 goroutine 里读）
-	if err := syscall.SetNonblock(int(f.Fd()), false); err != nil {
-		// 忽略：某些内核不支持
-	}
+	// Keep O_NONBLOCK: Go waits through its poller and Close can interrupt an
+	// idle reader. Changing the raw fd to blocking can strand Read/Close during
+	// failed setup retries. Drivers without poll support retain the retry below.
 	m := &Modem{portPath: path, f: f, lines: make(chan string, 4096)}
 	go m.reader()
 	return m, nil
@@ -46,28 +45,52 @@ func (m *Modem) push(l string) {
 	}
 }
 
+// Large diagnostic lines remain valid, but must not pin a large scratch buffer
+// for the lifetime of the modem after they have been delivered.
+func resetATLine(pending []byte) []byte {
+	if cap(pending) > 8192 {
+		return nil
+	}
+	return pending[:0]
+}
+
 func (m *Modem) reader() {
 	rd := bufio.NewReaderSize(m.f, 8192)
 	var pending []byte
+	promptStart := 0
 	for {
 		b, err := rd.ReadByte()
 		if err != nil {
+			if errors.Is(err, os.ErrClosed) {
+				return
+			}
 			time.Sleep(150 * time.Millisecond)
 			continue
 		}
 		pending = append(pending, b)
 		if b == '\n' {
-			l := strings.TrimRight(string(pending), "\r\n")
-			pending = pending[:0]
+			end := len(pending)
+			for end > 0 && (pending[end-1] == '\r' || pending[end-1] == '\n') {
+				end--
+			}
+			l := string(pending[:end])
+			pending = resetATLine(pending)
+			promptStart = 0
 			if l != "" {
 				m.push(l)
 			}
 			continue
 		}
 		// 关键：AT+CMGS 的 "> " 提示符后面没有换行，不单独识别就永远等不到
-		if t := strings.TrimLeft(string(pending), "\r\n"); t == ">" || t == "> " {
+		// 只记录前导 CR/LF 的结束位置，每个字节处理一次；PDU 正文不转成临时字符串。
+		if promptStart == len(pending)-1 && b == '\r' {
+			promptStart++
+		}
+		prompt := pending[promptStart:]
+		if len(prompt) == 1 && prompt[0] == '>' || len(prompt) == 2 && prompt[0] == '>' && prompt[1] == ' ' {
 			m.push(">")
-			pending = pending[:0]
+			pending = resetATLine(pending)
+			promptStart = 0
 		}
 	}
 }
@@ -213,10 +236,12 @@ func (m *Modem) SendPDU(pduHex string, dry bool) ([]string, error) {
 	}
 }
 
-// Setup 初始化模块到服务需要的状态
+// Setup 初始化模块到服务需要的状态；失败后调用方会重新打开端口。
+// 关闭失败的端口也会结束旧 reader，避免重试时多个 reader 争抢同一 AT 通道。
 func (m *Modem) Setup() error {
 	for _, cmd := range []string{"AT", "ATE0"} {
 		if _, err := m.AT(cmd, 5*time.Second); err != nil {
+			_ = m.f.Close()
 			return err
 		}
 	}

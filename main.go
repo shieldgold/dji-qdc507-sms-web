@@ -571,13 +571,13 @@ func main() {
 	fallback := func(w *Resp, r *Req) error {
 		switch r.Path {
 		case "/":
-			return w.Write(200, "text/html; charset=utf-8", []byte(indexHTML))
+			return w.Write(200, "text/html; charset=utf-8", indexHTML)
 		case "/style.css":
-			return w.Write(200, "text/css; charset=utf-8", []byte(styleCSS))
+			return w.Write(200, "text/css; charset=utf-8", styleCSS)
 		case "/model.js":
-			return w.Write(200, "application/javascript; charset=utf-8", []byte(modelJS))
+			return w.Write(200, "application/javascript; charset=utf-8", modelJS)
 		case "/app.js":
-			return w.Write(200, "application/javascript; charset=utf-8", []byte(appJS))
+			return w.Write(200, "application/javascript; charset=utf-8", appJS)
 		default:
 			return w.Write(404, "text/plain; charset=utf-8", []byte("not found"))
 		}

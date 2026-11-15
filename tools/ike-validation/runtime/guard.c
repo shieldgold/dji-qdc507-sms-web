@@ -29,7 +29,7 @@
 #include <unistd.h>
 
 #define TMPFS_MAGIC 0x01021994
-static volatile sig_atomic_t interrupted, daemon_pid, cli_pid, deadline_fired;
+static volatile sig_atomic_t interrupted, daemon_pid, cli_pid, deadline_fired, restore_only;
 static int kmsg_fd = -1, output_fd = -1, state_fd = -1;
 static long baseline;
 static double sampled;
@@ -48,6 +48,7 @@ static double monotonic(void) {
     return t.tv_sec + t.tv_nsec / 1e9;
 }
 static void signal_stop(int sig) { interrupted = sig; }
+static void signal_restore_only(int sig) { restore_only = 1; interrupted = sig; }
 static void hard_deadline(int sig) {
     (void)sig;
     /* Works even if stdout is blocked. Only unreaped direct-child groups. */
@@ -595,6 +596,7 @@ static int resume(pid_t pid, unsigned long long start, int seconds, int restore_
     struct timespec original, began, now;
     if (restore_clock && (clock_gettime(CLOCK_REALTIME, &original) || clock_gettime(CLOCK_MONOTONIC, &began))) return 65;
     signal(SIGHUP, SIG_IGN); signal(SIGPIPE, SIG_IGN);
+    if (restore_clock) signal(SIGUSR1, signal_restore_only);
     printf("RESUME_GUARD_READY pid=%ld supervisor=%ld start=%llu seconds=%d restore_clock=%d\n", (long)getpid(), (long)pid, start, seconds, restore_clock);
     double until = monotonic()+seconds;
     while (!interrupted && monotonic() < until) {
@@ -607,10 +609,11 @@ static int resume(pid_t pid, unsigned long long start, int seconds, int restore_
         original.tv_nsec += now.tv_nsec-began.tv_nsec;
         if (original.tv_nsec < 0) { original.tv_nsec += 1000000000L; original.tv_sec--; }
         if (original.tv_nsec >= 1000000000L) { original.tv_nsec -= 1000000000L; original.tv_sec++; }
-        if (clock_settime(CLOCK_REALTIME, &original)) { perror("RECOVERY_REQUIRED clock_restore"); rc = 1; }
+        if (clock_settime(CLOCK_REALTIME, &original)) { perror("RECOVERY_REQUIRED clock_restore"); return 1; }
         else printf("CLOCK_RESTORED epoch=%lld before_supervisor_cont=1\n", (long long)original.tv_sec);
     }
     if (!supervisor_matches(pid, start)) { puts("RESUME_REFUSED identity_changed"); return 1; }
+    if (restore_only) { puts("RESUME_DELEGATED verify_supervisor_before_cont=1"); return 0; }
     if (kill(pid, SIGCONT)) return 1;
     puts("RESUME_SENT verify_sms_health_separately=1"); return rc;
 }

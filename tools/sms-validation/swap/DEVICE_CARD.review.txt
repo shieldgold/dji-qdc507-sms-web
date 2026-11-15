@@ -1,0 +1,31 @@
+【仅电脑审阅卡；不可执行；未绑定当轮设备身份】
+
+当前结论：不满足存储准入。2026-11-15 只读样本显示同一 UBIFS 卷约2864KiB可用，完整候选约6MiB；copy还要求额外1MiB保留量。本卡不授予上传、NAND写入、停止进程、挂载或执行权限。
+
+必须等用户明确认可临时NAND写入和人工恢复条件、且主agent确认有合规可行的存储方案后，才另行生成当轮绑定卡。不得自动删除原程序、任何旧备份或业务日志，不使用同卷其他路径假装增加容量，不新增内核模块。
+
+待授权后的固定动作范围（本轮不执行）：
+1. 新鲜只读收集boot ID、SUP PID/starttime/完整exe+argv、原f34 dev/inode/size/SHA-256、原目录权限、/data可用字节数、当前挂载列表。
+2. 核对电脑候选程序与ARM helper哈希、最新clock-guard修复收据；确认原恢复程序及其本地备份确实可用。
+3. 只新建/run/qdc-sms-RUNID（root/0700）和/data/qdc-sms-RUNID（由copy自行独占新建root/0700）。原/data/smsweb/smsweb及start.sh不覆盖、不改权限、不替换。
+4. 用固定接口“qdc-sms-swap copy RUNID BYTES”，仅通过stdin流入本轮候选；不在/run暂存约6MiB副本。copy有90秒单调输入期限，开始/每64KiB同步前后MemAvailable不得低于6144KiB；失败只清本轮partial。核对COPY_READY、副本SHA-256、statvfs余量和新鲜内存准入。
+5. 原独立“resume-clock SUP_PID SUP_START 300”按已审方案启动；原SUP精确STOP，原短信子进程已终止。把本轮PID/start、boot及两inode写成root/0600的lease.control；缺任何字段就不生成hold卡。
+6. 本轮helper“check RUNID”必须通过；再由“hold RUNID”自行bind mount并记录SWAP_READY。除已有已审共存卡外不增加任意执行接口。
+7. 到期或精确SIGTERM helper即走同一恢复：STOP SUP →只终止同SUP直接且source inode相符的子进程→普通umount自己mountID→原fd重现→USR1请求clock guardian restore-only并等待DELEGATED proof（若此前已退出则核对既有SENT proof）→再次核对原路径/两inode→精确CONT→删除本轮副本。
+8. 现场只读确认原f34 hash、原SUP身份、单一新的原程序子进程、HTTP入口，再进行双方同意的业务验收；SWAP_COMPLETE不代替业务验收。
+9. 取回本轮swap.log、clock log、mount前后和身份/哈希证据后，仅清理清单完全匹配且没有活helper的/run/qdc-sms-RUNID。未知文件或挂载留下待人工核查，不递归猜测清理，不碰/run/qdc-tun-RUNID。
+
+现场失败条件：RECOVERY_REQUIRED、clock proof缺失/顺序错误、原fd没有重现、未知mountID、pid/start/exe变化、普通umount失败、存储或内存准入失败。不得靠CONT或删除未知资源把失败改写成成功。
+RECOVERY_REQUIRED路径也会请求精确clock guardian restore-only并保持STOP、不清理未知资源；须检查clock_proven和guardian_retired。若未能证明guardian退出，它仍可能在原300秒期限自行CONT，不能无人值守地把STOP当永久锁止。旧guard不支持USR1，必须先核对新guard最终SHA/回归收据；现场须有人在预留30秒窗口内处理失败，必要时采用另行确认的重启恢复。
+
+控制文件格式（格式说明；以下不是设备数值，不能直接作为lease.control）：
+QDC_SMS_SWAP_V1
+RUN <本轮RUNID>
+BOOT <本轮boot-uuid>
+SUP <精确SUP_PID> <精确SUP_startticks>
+ORIGINAL <原dev> <原inode> <原字节数>
+SOURCE <本轮source_dev> <本轮source_inode> <本轮副本字节数>
+CLOCK <原clock_guard_PID> <原clock_guard_startticks>
+SECONDS 300
+
+保护窗口：原clock guardian的真实startticks/HZ起点+300秒为原期限，swap最迟在该起点+270秒进入回滚；不能从swap启动重新借出300秒。未绑定的新鲜身份和时钟恢复证明均不能省略。
