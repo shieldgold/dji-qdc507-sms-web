@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "run_id": "CN20261115G01",
+  "date": "2026-11-15",
+  "timezone": "Asia/Shanghai",
+  "status": "stopped_at_memory_admission_restored_and_cleaned",
+  "physical_device_preflight_executed": true,
+  "c_program_uploaded": false,
+  "c_program_executed": false,
+  "vpn_started": false,
+  "candidate_bind_mount_created": false,
+  "firmware_or_autostart_changed": false,
+  "historical_backups_deleted": false,
+  "candidate": {
+    "source_commit": "a9518c6d88095ddd527c3cf1c92f6799d4a9fb0d",
+    "bytes": 1005284,
+    "sha256": "8a458dde9f2e2b2a37324f979bc1cc501e18519ae237fa330b5c29dee3d955a0"
+  },
+  "physical_recovery_confirmed": true,
+  "memory_admission": {
+    "required_kib": 12288,
+    "samples_kib": [
+      12020
+    ],
+    "required_consecutive_samples": 3,
+    "sample_interval_seconds": 5,
+    "stopped_on_first_failure": true,
+    "deficit_kib": 268,
+    "earlier_single_run_11776_exception_reused": false,
+    "pause_completed_available_kib": 11888
+  },
+  "unchanged_runtime_requirements_not_exercised": {
+    "start_kib": 8192,
+    "floor_kib": 6144,
+    "max_drop_kib": 3072,
+    "coexist_seconds": 30,
+    "required_ping_http_pairs": 10,
+    "guard_seconds": 80,
+    "kill_grace_seconds": 3,
+    "host_card_max_seconds": 90,
+    "log_limit_bytes": 1048576,
+    "baseline_position": "after staging while SMS paused before LOGGER_READY/GO"
+  },
+  "storage": {
+    "available_bytes_before": 2813952,
+    "candidate_bytes": 1005284,
+    "reserve_bytes": 1048576,
+    "required_bytes": 2053860,
+    "admission_passed": true,
+    "available_bytes_final": 2813952
+  },
+  "logging": {
+    "windows": [
+      {
+        "stage": "22-log-canary-1",
+        "status": "passed",
+        "wall_seconds": 30.244,
+        "minimum_available_kib": 8376
+      },
+      {
+        "stage": "22-log-canary-2",
+        "status": "passed",
+        "wall_seconds": 30.281,
+        "minimum_available_kib": 8296
+      },
+      {
+        "stage": "22-log-canary-3",
+        "status": "passed",
+        "wall_seconds": 30.289,
+        "minimum_available_kib": 8212
+      },
+      {
+        "stage": "86-post-restore-log",
+        "status": "passed",
+        "wall_seconds": 30.3,
+        "minimum_available_kib": 8756
+      }
+    ],
+    "usb_transfers": 1337,
+    "usb_transfer_errors": 0,
+    "short_writes": 0,
+    "controller_closed": true
+  },
+  "recovery": {
+    "clock_before_supervisor_cont": true,
+    "supervisor_pid": 428,
+    "supervisor_start": 826,
+    "original_sms_pid": 3895,
+    "original_sms_start": 2631939,
+    "restored_sms_pid": 2254,
+    "restored_sms_start": 9590336,
+    "exactly_one_sms_process": true,
+    "http_final": 200,
+    "sim_final": "READY",
+    "boot_config_taint_unchanged": true,
+    "original_binary_startup_recovery_hashes_unchanged": true,
+    "auth_messages_push_calls_hashes_unchanged": true,
+    "addresses_and_ipv4_routes_dns_unchanged": true,
+    "no_test_process_directory_or_mount_remains": true,
+    "no_tun_or_vpn_resource_remains": true,
+    "final_available_kib": 8852,
+    "reboot_used": false
+  },
+  "firewall_validation_limit": "No firewall write commands; preflight raw dump hash includes comments/counters, so not sufficient for rule-by-rule comparison. Two normalized recovery hashes match.",
+  "local_input_corrections": [
+    {
+      "kind": "host_terminal_line_limit",
+      "device_request_submitted": false,
+      "resolved": "clear unsubmitted input and disable canonical/echo for the controller PTY"
+    },
+    {
+      "kind": "controller_push_path_rejection",
+      "bytes_sent": 0,
+      "resolved": "use reviewed /run/qdc-tun-RUN staging path, verify and move to private SMS RAM directory"
+    }
+  ],
+  "evidence_sha256": {
+    "00-current-identity.raw": "278a36ea405c92356d07f612c8623399eab8ec8982c60ce6ef18d65c054cfb34",
+    "01-readonly-baseline.raw": "b45b569f84c1f63c1656974e0ce6a1b17bcd92c2045e37620a5ea34ff08426a5",
+    "10-create-ram.raw": "5c2d9ffe19d51885ec25938d32cbda3d86018b543c42c5bb573cc591a0c14e2b",
+    "20-0-0-push.raw": "86a3dfcfe9b73163bffb2ea7f5e37ad7de7395361f57b30195e873355e8a0872",
+    "20-1-0-push.raw": "78c5b6d8e95751b2ec36ab1fe8ec09ff547b0f12f0341b21ea30f702b741bc9f",
+    "21-0-assemble.raw": "3a9143ffbcdcfa6bbc2d69f9ae95e2834202fc463cd5c1a342281d82c0f95968",
+    "21-1-assemble.raw": "05f5b50e42cfd19fefb72cdb4c6507c7ddfedc9f24026c9f82a47509eb904805",
+    "22-bootstrap-selftest.raw": "3123f5d38da4b4cce7ed115082ff69c35ffb2ea71254c81799f2024220d28774",
+    "22-log-canary-1.raw": "e51ea64c68769b0a6910e977ff1840c819d33585c9d49d4ec144611aa3046274",
+    "22-log-canary-2.raw": "90c3487f937646946e01e9dff1b329b783b5ce5baf9aee07ddc191c7734a8028",
+    "22-log-canary-3.raw": "07e7a24b4efab4533a179ce6e559a53b272bb0a9f93d7c377e17fd585009ef06",
+    "23-fresh-before-pause.raw": "b439d2b282ae5327224d6ff9d7a4e49b476c28d5aa1089c5a0b8aadfa7e0db42",
+    "24-swap-helper-push.raw": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "24b-swap-stage.raw": "7781f9db158babdd63f36b51ecab0bc82ec1e4bea08a360734fb2ee07ed14e8a",
+    "24c-swap-verify-move.raw": "ac0ac930fe3efa375a82c5f16ebf2cb97715eb022d243e0b39594805a72b1ec9",
+    "25-clock-ready-and-pause.raw": "91f58b5f165f82eb6a94289c891ea49770f793ba6ddf653d8f7cd177806f176e",
+    "26-client-memory-admission.raw": "6143035634d5a91562e7becf38c4390b6e48223710675d8be0dc4e5feceac6dc",
+    "27-memory-refusal-restore.raw": "b246ca1280e86d5211f2b0e8732907908a9b4499a55664432d37e66aaa2e65e9",
+    "28-restore-readback.raw": "9896e6b19ca0d9dc22327da4d94a75d51b4082a332fd9b223041bd06470d4413",
+    "86-post-restore-log.raw": "6676068f654f46f6d93e63adaf725e4f7db5cfdaaf75f5d1f03acf4cc877dd9a",
+    "87-clean-sms-bootstrap.raw": "30cf4b2cd4cf0f85fd93baa96709d10af9cb6a39286c1d4635830b099e992504",
+    "90-clean-owned-files.raw": "39114606d49f96de6576a40848e41adc119cd50fc2b08af3a4a768fe1fa23934",
+    "99-final-proof.raw": "862b0814ecec9e65bfac0d9dc8d5c6f70717f0117b46337747929075ebc2e23a",
+    "events.jsonl": "c4ff015773f55c51c6a24d9c41ab040301859932da7bfdc1de10555d8f94e975",
+    "usb-transfers.jsonl": "8ebc580c80f85230ec57b16ad3d77b08e8a58592018dca74cd2a3f3bc03675ce"
+  }
+}
