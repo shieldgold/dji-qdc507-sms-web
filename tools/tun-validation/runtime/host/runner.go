@@ -103,12 +103,20 @@ func runRequest(c *client, q request, run, dir string) (r result) {
 		r.Bytes = len(b)
 		return r
 	}
-	if q.Op == "backup" {
+	if q.Op == "backup" || q.Op == "backup-program" {
 		allowed := map[string]bool{"auth.json": true, "messages.json": true, "push-state.json": true,
 			"call-attempts.json": true, "clock.json": true, "traffic.json": true}
 		name := strings.TrimPrefix(q.Remote, "/data/smsweb/")
-		if !allowed[name] || q.Remote != "/data/smsweb/"+name || q.Seconds != 15 ||
-			q.ExpectedBytes < 1 || q.ExpectedBytes > 256<<10 || !digest256.MatchString(q.ExpectedSHA256) ||
+		maximum, encodedMaximum, seconds := 256<<10, 1<<20, 15.0
+		if q.Op == "backup-program" {
+			allowed = map[string]bool{"smsweb": true, "start.sh": true}
+			maximum, encodedMaximum, seconds = 8<<20, 12<<20, 60
+			if name == "start.sh" {
+				maximum = 64 << 10
+			}
+		}
+		if !allowed[name] || q.Remote != "/data/smsweb/"+name || q.Seconds != seconds ||
+			q.ExpectedBytes < 1 || q.ExpectedBytes > maximum || !digest256.MatchString(q.ExpectedSHA256) ||
 			q.Command != "" || q.Ready != "" || q.Local != "" || q.MinimumKiB != 0 {
 			return fail(fmt.Errorf("restricted private state backup path, digest, size or fields"))
 		}
@@ -121,7 +129,7 @@ func runRequest(c *client, q request, run, dir string) (r result) {
 		defer backup.Close()
 		err = c.shell("exec /bin/busybox base64 "+q.Remote, time.Duration(q.Seconds*float64(time.Second)), func(p []byte) error {
 			r.Bytes += len(p)
-			if r.Bytes > 1<<20 {
+			if r.Bytes > encodedMaximum {
 				return fmt.Errorf("private backup transport bound exceeded")
 			}
 			if _, err := backup.Write(p); err != nil {

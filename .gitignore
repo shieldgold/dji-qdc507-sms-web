@@ -35,3 +35,4 @@ push-state.json
 tools/tun-validation/__pycache__/
 tools/ike-validation/__pycache__/
 tools/ike-validation/runtime/__pycache__/
+tools/sms-validation/manual/__pycache__/

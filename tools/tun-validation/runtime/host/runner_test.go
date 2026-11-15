@@ -98,6 +98,72 @@ func TestPrivateStateBackupCannotOverwriteExistingBackup(t *testing.T) {
 	}
 }
 
+func TestProgramBackupKeepsExactDeploymentPrivately(t *testing.T) {
+	for _, remote := range []string{"/data/smsweb/smsweb", "/data/smsweb/start.sh"} {
+		data := []byte("PROGRAM_BACKUP_SYNTHETIC_ONLY\n")
+		digest := sha256.Sum256(data)
+		q := request{Op: "backup-program", ID: "program", Seconds: 60, Remote: remote,
+			ExpectedBytes: len(data), ExpectedSHA256: fmt.Sprintf("%x", digest)}
+		f := &fakeWire{}
+		f.service = func(s string, f *fakeWire) {
+			if s != "shell:exec /bin/busybox base64 "+remote {
+				t.Fatalf("unsafe service %q", s)
+			}
+			f.enqueue(okay, 7, 1, nil)
+			f.enqueue(wrte, 7, 1, []byte(base64.StdEncoding.EncodeToString(data)))
+			f.enqueue(clse, 7, 1, nil)
+		}
+		root := t.TempDir()
+		r := runRequest(newClient(f), q, "R1", root)
+		if r.Status != "ok" {
+			t.Fatalf("%s: %+v", remote, r)
+		}
+		b, err := os.ReadFile(filepath.Join(root, "program.backup.b64"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		decoded, err := base64.StdEncoding.DecodeString(string(b))
+		if err != nil || !bytes.Equal(decoded, data) {
+			t.Fatalf("wrong backup %v", err)
+		}
+		log, _ := os.ReadFile(filepath.Join(root, "program.raw"))
+		if r.Tail != "" || bytes.Contains(log, data) || bytes.Contains(log, b) {
+			t.Fatal("program payload in logs")
+		}
+	}
+}
+
+func TestProgramBackupRejectsOtherPathsBoundsAndFields(t *testing.T) {
+	base := request{Op: "backup-program", ID: "program", Seconds: 60, Remote: "/data/smsweb/smsweb",
+		ExpectedBytes: 10, ExpectedSHA256: strings.Repeat("a", 64)}
+	cases := []request{}
+	for _, path := range []string{"/data/smsweb/auth.json", "/data/smsweb/client.key", "/data/smsweb/previous/smsweb", "/data/smsweb/smsweb;id"} {
+		q := base
+		q.Remote = path
+		cases = append(cases, q)
+	}
+	q := base
+	q.ExpectedBytes = (8 << 20) + 1
+	cases = append(cases, q)
+	q = base
+	q.Remote = "/data/smsweb/start.sh"
+	q.ExpectedBytes = (64 << 10) + 1
+	cases = append(cases, q)
+	q = base
+	q.Seconds = 15
+	cases = append(cases, q)
+	q = base
+	q.Command = "true"
+	cases = append(cases, q)
+	for _, q := range cases {
+		f := &fakeWire{}
+		r := runRequest(newClient(f), q, "R1", t.TempDir())
+		if r.Status == "ok" || f.opens != 0 {
+			t.Fatalf("unreviewed program backup: %+v", r)
+		}
+	}
+}
+
 func admissionRequest(t *testing.T, threshold int) request {
 	t.Helper()
 	var q request

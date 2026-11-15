@@ -27,6 +27,8 @@ struct lease {
     int runbase, database, ram, data, clockdir, original, source, bound, clocklog, log;
     struct stat ramstat, datastat;
     uint64_t mount_id;
+    /* Only the separate manual-migration entry point enables retention. */
+    int retain_source;
     char ramname[80], dataname[80], clockname[80], rampath[128], sourcepath[160], guardpath[160];
 };
 static void stop_signal(int sig) { (void)sig; interrupted=1; }
@@ -238,6 +240,7 @@ static int restore_clock(struct lease *l) {
 }
 static int cleanup_source(struct lease *l) {
     if (!source_path(l)) return -1;
+    if (l->retain_source) { record(l,"MANUAL_INSTALL_RETAINED source_identity_verified=1"); return 0; }
     if (unlinkat(l->data,"smsweb",0) || fsync(l->data) || unlinkat(l->database,l->dataname,AT_REMOVEDIR) || fsync(l->database)) return -1;
     return 0;
 }
@@ -259,10 +262,11 @@ static int rollback(struct lease *l, const char *reason) {
      * immediately before granting our own CONT, not only before that wait. */
     if (target_mount(&id)!=0 || !current_target(l,1) || !fd_same(l->original,l->c.old_dev,l->c.old_ino,l->c.old_size) || !source_path(l)) return recovery(l,"post_clock_original_identity");
     record(l,"CLOCK_PROOF_OK restored_before_resume=1");
+    if (l->retain_source && memory_available()<10240) return recovery(l,"manual_restore_memory_below_10240");
     if (!supervisor(l,-1) || kill(l->c.supervisor,SIGCONT)) return recovery(l,"supervisor_resume_identity");
     record(l,"SUP_RESUMED pid=%ld start=%" PRIu64,(long)l->c.supervisor,l->c.sup_start);
     if (cleanup_source(l)) { record(l,"RECOVERY_REQUIRED reason=private_copy_cleanup original_restored=1 clock_proven=1"); return 1; }
-    record(l,"SWAP_COMPLETE source_removed=1 verify_original_sms_health_separately=1"); return 0;
+    record(l,"SWAP_COMPLETE source_removed=%d verify_original_sms_health_separately=1",!l->retain_source); return 0;
 }
 static int setup(struct lease *l, const char *run) {
     memset(l,0,sizeof(*l));

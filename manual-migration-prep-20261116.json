@@ -1,0 +1,328 @@
+{
+  "schema": 1,
+  "status": "prepared_not_migrated",
+  "observed_at": "2026-11-16T01:08:22+08:00",
+  "physical_recovery_confirmation": "pending",
+  "device_mutated": false,
+  "installed": false,
+  "sms_sent": false,
+  "hardware_soak_seconds": 0,
+  "device": {
+    "kernel": "3.18.44",
+    "taint": 4608,
+    "supervisor": {
+      "pid": 428,
+      "start": 826
+    },
+    "original_go": {
+      "pid": 3562,
+      "start": 10189986,
+      "dev": 16,
+      "ino": 898,
+      "bytes": 6226072,
+      "sha256": "f34cf22966012f5d88acae5aba978694674ba851124990bf85ce1ed5e05e14e7"
+    },
+    "http": 200,
+    "sim": "READY",
+    "mem_available_with_original_go_kib": 8864,
+    "start_sha256": "6c8b98753bd20699567e2d9cce72e96f4fbba71b7ff4bb46ed0e28099e5b3c08",
+    "previous_sha256": "68aa7fcbe52273ee7409c0b3eb39dcfe0b91d7b80559c5599b387ffb033bd8fe"
+  },
+  "backups": {
+    "program_and_start_verified": true,
+    "private_json_files": 6,
+    "json_validated": true,
+    "source_unchanged_during_collection": true,
+    "paused_pre_migration_backup_pending": true,
+    "contents_in_git": false
+  },
+  "c_product": {
+    "changed": false,
+    "bytes": 1005284,
+    "sha256": "8a458dde9f2e2b2a37324f979bc1cc501e18519ae237fa330b5c29dee3d955a0"
+  },
+  "production_artifacts": {
+    "qdc-sms-manual-arm": {
+      "abi": "ARM EABI5 soft-float",
+      "bytes": 87380,
+      "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+      "static": true
+    },
+    "qdc-ike-soak-arm": {
+      "abi": "ARM EABI5 soft-float",
+      "bytes": 95644,
+      "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+      "static": true
+    }
+  },
+  "thresholds_kib": {
+    "admission": 12288,
+    "runtime_start": 8192,
+    "floor": 6144,
+    "drop": 3072,
+    "restore_go": 10240
+  },
+  "seconds": {
+    "manual": 5400,
+    "preparation": 120,
+    "soak": 3600
+  },
+  "host_checks": [
+    "go test -race ./...",
+    "go vet ./...",
+    "gofmt clean"
+  ],
+  "python_tests": 14,
+  "core_checks": [
+    "SMS_MANUAL_CORE_TESTS_OK",
+    "SMS_SOAK_CORE_TESTS_OK"
+  ],
+  "arm_acceptance": {
+    "schema": 1,
+    "status": "passed",
+    "device_executed": false,
+    "hardware_hour_not_claimed": true,
+    "clock_rate": {
+      "production": 1,
+      "lab_soak": 30
+    },
+    "build_sha256": "f6c48aec9d97445170d86c32e6fcc60c8cb93f184d6ae31f3b706778d232d559",
+    "cases": [
+      "manual",
+      "normal",
+      "wrong_baseline",
+      "no_go",
+      "http_failure",
+      "signal_abort"
+    ],
+    "results": [
+      {
+        "status": "passed",
+        "case": "manual",
+        "device_executed": false,
+        "kernel_sha256": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "production_artifacts": {
+          "qdc-sms-manual-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 87380,
+            "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+            "static": true
+          },
+          "qdc-ike-soak-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 95644,
+            "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+            "static": true
+          }
+        },
+        "cases": [
+          "early_handoff_retains_install",
+          "running_c_to_original_retains_install",
+          "missing_soak_proof_rolls_back",
+          "committed_boot_session_still_rolls_back",
+          "installed_symlink_refused",
+          "owned_vpn_guard_retired_before_restore",
+          "unknown_overlay_retained",
+          "failed_soak_auto_rolls_back",
+          "preparation_timeout_reclaims_partial_upload",
+          "low_restore_memory_keeps_supervisor_stopped"
+        ],
+        "preparation_real_seconds": 120.017
+      },
+      {
+        "status": "passed",
+        "case": "normal",
+        "device_executed": false,
+        "kernel_sha256": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "production_artifacts": {
+          "qdc-sms-manual-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 87380,
+            "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+            "static": true
+          },
+          "qdc-ike-soak-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 95644,
+            "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+            "static": true
+          }
+        },
+        "scaled_functional_only": true,
+        "clock_rate": 30,
+        "real_seconds": 120.087,
+        "window_seconds": 3602.618,
+        "pairs": 360,
+        "reconnects": 3,
+        "rekeys": 1,
+        "production_hour_not_claimed": true
+      },
+      {
+        "status": "passed",
+        "case": "wrong_baseline",
+        "device_executed": false,
+        "kernel_sha256": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "production_artifacts": {
+          "qdc-sms-manual-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 87380,
+            "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+            "static": true
+          },
+          "qdc-ike-soak-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 95644,
+            "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+            "static": true
+          }
+        },
+        "expected_stop": "wrong_baseline",
+        "scaled_functional_only": true
+      },
+      {
+        "status": "passed",
+        "case": "no_go",
+        "device_executed": false,
+        "kernel_sha256": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "production_artifacts": {
+          "qdc-sms-manual-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 87380,
+            "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+            "static": true
+          },
+          "qdc-ike-soak-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 95644,
+            "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+            "static": true
+          }
+        },
+        "expected_stop": "no_go",
+        "scaled_functional_only": true
+      },
+      {
+        "status": "passed",
+        "case": "http_failure",
+        "device_executed": false,
+        "kernel_sha256": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "production_artifacts": {
+          "qdc-sms-manual-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 87380,
+            "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+            "static": true
+          },
+          "qdc-ike-soak-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 95644,
+            "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+            "static": true
+          }
+        },
+        "expected_stop": "http_failure",
+        "scaled_functional_only": true
+      },
+      {
+        "status": "passed",
+        "case": "signal_abort",
+        "device_executed": false,
+        "kernel_sha256": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "production_artifacts": {
+          "qdc-sms-manual-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 87380,
+            "sha256": "f2a8c23cb3870de87e42faac373252aed74020815472d77f399406b9fc779998",
+            "static": true
+          },
+          "qdc-ike-soak-arm": {
+            "abi": "ARM EABI5 soft-float",
+            "bytes": 95644,
+            "sha256": "b618a8b619299802a43b998b0f7307a69fb32948f68b6fb6e3109a765a495133",
+            "static": true
+          }
+        },
+        "expected_stop": "signal_abort",
+        "scaled_functional_only": true
+      }
+    ]
+  },
+  "acceptance_sha256": "f82e0655cdf589897be2c8444f68a207f344353e0571857b5af41dbd8dc01da7",
+  "short_helper_regression": {
+    "native_copy_cases": 6,
+    "low_memory_cases": 1,
+    "storage_cases": 1,
+    "real_input_deadline_seconds": 90,
+    "arm": {
+      "status": "passed",
+      "device_executed": false,
+      "network": "none; no USB devices",
+      "artifact_sha256": {
+        "kernel": "20080f8d7fc41a3f4483ecd982abb3541226316273e210d2a98b89100c7cc712",
+        "initrd": "08770606118cbdfa34ea1d451e62f7c44cb846a091d200ae772db0b3afa3d3ec",
+        "helper": "5dca48f8a74773ff4ec9ab31813692db667cce3c02a329ef1295138df0a660a5"
+      },
+      "cases": [
+        "early_clock_handoff",
+        "running_new_to_original",
+        "clock_proof_refusal",
+        "symlink_refusal",
+        "clock_window_target_refusal",
+        "unknown_overlay_retained"
+      ],
+      "clock_modified": false
+    },
+    "build_sha256": "5f891dca4f86f37c89a3717f688fe6faa566e7c0e7b0e4f18c00d438211d33c2"
+  },
+  "evidence_sha256": {
+    "build.json": "f6c48aec9d97445170d86c32e6fcc60c8cb93f184d6ae31f3b706778d232d559",
+    "logs/http_failure/client-command.json": "11d89dc30ffed1e58d2e437675e7666fd6478f0735b0fc6bc523a545c2687cef",
+    "logs/http_failure/client-qemu.log": "e79ba05acc320b3fbb7dab88c00ba9cb582a0fff1cc40e9b390baeabdf40833f",
+    "logs/http_failure/client.log": "379d10f8adfd100e09106a4ecee44c2ba95b50e59a34fb7cbb4a143f5d800f29",
+    "logs/http_failure/result.json": "03c96bd365e2049b5e38211075d95e2f18721bb919b2253fa8793106c4ef9487",
+    "logs/http_failure/server-command.json": "1bb0555f7d3a2eb1addc458f9e9dffb251df38d0c646505139a868b632e6f75a",
+    "logs/http_failure/server-qemu.log": "e79ba05acc320b3fbb7dab88c00ba9cb582a0fff1cc40e9b390baeabdf40833f",
+    "logs/http_failure/server.log": "d083603159f46dc299bb047e2f2eb362d2aa00a780e9a0075a7ae438d85fe99f",
+    "logs/manual/command.json": "2bc2a85ed42806b258a429779822c5bfe2619e68826437da87ddfda5b9525533",
+    "logs/manual/manual.log": "e3685c8b70004ca0c701f5c7ceab64050275631186e9804f7f47d7dd30197bdb",
+    "logs/manual/qemu.log": "ea911a55a2e5606eaab953b76bb296ac1bf18618b5dbc07822e1c655af20a16f",
+    "logs/manual/result.json": "8fa20786deeeabf4166a88e4c5054559a328918274f3b36daf378c11fcddabe1",
+    "logs/no_go/client-command.json": "5e1084c01e6770b329f6745e3b6228176350020d3d259ac753b7531108793395",
+    "logs/no_go/client-qemu.log": "ea911a55a2e5606eaab953b76bb296ac1bf18618b5dbc07822e1c655af20a16f",
+    "logs/no_go/client.log": "da5c7d689a2757978282b522db212ebf7eed841394d4627087fb76b1c2a66508",
+    "logs/no_go/result.json": "8113f290abb7b4e4210826511de03f849f1789f222b21864ca4750c2e73dbfe5",
+    "logs/no_go/server-command.json": "49674168c1cabe7e00391dfdc40ebf7503aa4aa8ae27bdb47db7d1460f4e82f0",
+    "logs/no_go/server-qemu.log": "e79ba05acc320b3fbb7dab88c00ba9cb582a0fff1cc40e9b390baeabdf40833f",
+    "logs/no_go/server.log": "d083603159f46dc299bb047e2f2eb362d2aa00a780e9a0075a7ae438d85fe99f",
+    "logs/normal/client-command.json": "075643ab7607f126eaf220abadb932b4b1a9aba6905a41e6e4e05028e4572df0",
+    "logs/normal/client-qemu.log": "ea911a55a2e5606eaab953b76bb296ac1bf18618b5dbc07822e1c655af20a16f",
+    "logs/normal/client.log": "f6cc7a540fcb84608989779095b0d4a2a3a481a4830f98b090b20760c1a0b75b",
+    "logs/normal/result.json": "aaf0942d74b20fbaa87594bd9fbc1d9eeb0e8316ac8af8312d87e6e9d5186644",
+    "logs/normal/server-command.json": "c1a5088c8f0d3fa353922d37e3205c0593644381a0194e1c295f1a081a0eca6e",
+    "logs/normal/server-qemu.log": "e79ba05acc320b3fbb7dab88c00ba9cb582a0fff1cc40e9b390baeabdf40833f",
+    "logs/normal/server.log": "d083603159f46dc299bb047e2f2eb362d2aa00a780e9a0075a7ae438d85fe99f",
+    "logs/signal_abort/client-command.json": "1457e52bd26808c82e0fe9d0bbbe3928996c9dcbad36e94330f4a7042330f3e5",
+    "logs/signal_abort/client-qemu.log": "ea911a55a2e5606eaab953b76bb296ac1bf18618b5dbc07822e1c655af20a16f",
+    "logs/signal_abort/client.log": "0cec747b4b4a7e587f3fa4789739481e8cd9028aa913b44e937bf7117b550e07",
+    "logs/signal_abort/result.json": "2564165498070614f2f133197a82b0da8305e36b6f5f6627fc181adf950dc79c",
+    "logs/signal_abort/server-command.json": "6cd3b11635a558f98c20220ddf1cfb03d53e1cecbc9aa3fac5d91c348b3a2134",
+    "logs/signal_abort/server-qemu.log": "e79ba05acc320b3fbb7dab88c00ba9cb582a0fff1cc40e9b390baeabdf40833f",
+    "logs/signal_abort/server.log": "d083603159f46dc299bb047e2f2eb362d2aa00a780e9a0075a7ae438d85fe99f",
+    "logs/wrong_baseline/client-command.json": "b10591d4f2dc155f42d515b1f4c74f6f0dce80f70c47d9bbc2088c0650eb17a6",
+    "logs/wrong_baseline/client-qemu.log": "ea911a55a2e5606eaab953b76bb296ac1bf18618b5dbc07822e1c655af20a16f",
+    "logs/wrong_baseline/client.log": "2d7a38c9a1a617285856b487d1bbf6d37bdfcbd8282f7e7d052f32d017a0bc36",
+    "logs/wrong_baseline/result.json": "987bddb21ba974a0b7c5fc02a56b7c852834f5df3c538b0eeba6ad4393311601",
+    "logs/wrong_baseline/server-command.json": "ed7fb6ede37cece7c01d77f654b02d509e97ad39634a35789cdfb2eb33cbbd12",
+    "logs/wrong_baseline/server-qemu.log": "e79ba05acc320b3fbb7dab88c00ba9cb582a0fff1cc40e9b390baeabdf40833f",
+    "logs/wrong_baseline/server.log": "d083603159f46dc299bb047e2f2eb362d2aa00a780e9a0075a7ae438d85fe99f"
+  },
+  "not_yet_verified": [
+    "physical SMS submit and matching inbound",
+    "physical VPN reconnect/rekey",
+    "physical continuous 3600-second coexistence",
+    "physical C migration and rollback",
+    "current-boot C commit after successful acceptance"
+  ],
+  "firmware_changed": false,
+  "autostart_changed": false
+}
