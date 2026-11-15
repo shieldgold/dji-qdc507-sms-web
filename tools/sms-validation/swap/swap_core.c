@@ -64,7 +64,10 @@ int swap_mount_record(const char *line, const char *target, uint64_t *id) {
     char copy[4096]; strcpy(copy,line); char *save=NULL, *fields[6];
     for (int i=0; i<6; i++) { fields[i]=strtok_r(i?NULL:copy," \n",&save); if (!fields[i]) return -1; }
     uint64_t mount, parent;
-    if (swap_uint(fields[0],&mount) || !mount || mount>INT_MAX || swap_uint(fields[1],&parent) || !parent || parent>INT_MAX) return -1;
+    if (swap_uint(fields[0],&mount) || !mount || mount>INT_MAX || swap_uint(fields[1],&parent) || parent>INT_MAX) return -1;
+    /* The device's 3.18 kernel reports parent=0 for the root mount only.
+     * Keep rejecting a zero parent for the target or any other mountpoint. */
+    if (!parent && strcmp(fields[4],"/")) return -1;
     if (strcmp(fields[4],target)) return 0;
     *id=mount; return 1;
 }

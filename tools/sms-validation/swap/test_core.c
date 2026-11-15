@@ -35,6 +35,12 @@ int main(void) {
     assert(!swap_control_parse(valid, "LAB01", &c));
     assert(swap_mount_record("42 1 8:1 /source /data/smsweb/smsweb rw - ext4 /dev/mmcblk0 rw\n", "/data/smsweb/smsweb", &id)==1 && id==42);
     assert(swap_mount_record("43 1 8:1 /source /data/smsweb/smsweb-extra rw - ext4 /dev/mmcblk0 rw\n", "/data/smsweb/smsweb", &id)==0);
+    /* QDC507 3.18.44 exposes its root mount with parent ID zero. */
+    assert(swap_mount_record("10 0 0:11 / / ro,relatime - ubifs ubi0:rootfs ro,bulk_read,chk_data_crc\n", "/data/smsweb/smsweb", &id)==0);
+    assert(swap_mount_record("0 0 0:11 / / ro - ubifs ubi0:rootfs ro\n", "/data/smsweb/smsweb", &id)<0);
+    assert(swap_mount_record("42 0 8:1 /source /data/smsweb/smsweb rw - ext4 /dev/a rw\n", "/data/smsweb/smsweb", &id)<0);
+    assert(swap_mount_record("42 0 8:1 /source /other rw - ext4 /dev/a rw\n", "/data/smsweb/smsweb", &id)<0);
+    assert(swap_mount_record("10 18446744073709551616 0:11 / / ro - ubifs ubi0:rootfs ro\n", "/data/smsweb/smsweb", &id)<0);
     assert(swap_mount_record("18446744073709551616 1 8:1 /source /data/smsweb/smsweb rw - ext4 /dev/a rw\n", "/data/smsweb/smsweb", &id)<0);
     assert(swap_mount_record("42 1 8:1 /source /data/smsweb/smsweb rw", "/data/smsweb/smsweb", &id)<0);
     const char *ready="RESUME_GUARD_READY pid=2001 supervisor=431 start=813 seconds=300 restore_clock=1\n";
